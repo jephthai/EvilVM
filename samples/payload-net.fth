@@ -336,7 +336,7 @@ public{
   ." IDENT:"
   s" USERNAME" @env .cstring ." @"
   s" COMPUTERNAME" @env .cstring ." ."
-  s" USERDOMAIN" @env .cstring ." :"
+  s" USERDOMAIN" @env dup if .cstring else drop then ." :"
   machineguid type cr
   .post
 ;
