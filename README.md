@@ -1,6 +1,13 @@
 # EvilVM
 EvilVM compiler for information security research tools.  The project is built around a native code Forth compiler that is deployed as a position independent shellcode. It provides a platform for remote code execution, useful in information security contexts.
 
+# NolaCon 2019 Presentation #
+
+I presented EvilVM's Alpha release at [NolaCon](https://nolacon.com/), 2019.  You can see [Irongeek](http://www.irongeek.com/)'s video recording on YouTube, for a good intro to the project and some demos:
+
+[YouTube Recording](https://www.youtube.com/embed/55234oZ0EDU)
+
+# Docs #
 Find documentation for EvilVM at [the doc site](http://evilvm.ninja).
 
 The primary use case for EvilVM is to deploy the agent on a remote system, and interact with it. The language’s outer interpreter is presented as an interactive shell or REPL, and the system provides the capability to deliver code to the agent, which is compiled, and added to the hyperstatic global environment.
