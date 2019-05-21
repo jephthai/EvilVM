@@ -167,7 +167,7 @@ dec
 : @word  word lookup dup >xt swap cell + 1+ @ 65535 and ;
 : [i]    @word mem, ; imm
 
-: see word lookup dup >xt swap cell + 1+ d@ 11 + dump ;
+: see    word lookup dup >xt swap cell + 1+ d@ 11 + dump ;
 
 \ ------------------------------------------------------------------------
 \ Counted loops
@@ -198,6 +198,14 @@ hex
 : l  38 #r@ ; imm
 : m  48 #r@ ; imm
 dec
+
+\ ------------------------------------------------------------------------
+\ disassemble functions
+\ ------------------------------------------------------------------------
+
+: .raw   8 0 do dup 255 and emit 8 >> loop drop ;
+: disas  2 emit 1 emit over .raw dup .raw type ;
+: seeasm word lookup dup >xt swap cell + 1+ d@ 11 + disas 3 emit ;
 
 \ ------------------------------------------------------------------------
 \ Non counted loops

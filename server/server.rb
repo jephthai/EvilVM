@@ -23,6 +23,7 @@ require "colors.rb"
 require "digest"
 require 'pry'
 require 'minim.rb'
+require 'base64'
 
 def putshl(msg, chars)
   print("\x1b[35m")
@@ -100,6 +101,7 @@ class Channel
     @ident  = nil
     @lines  = CircleBuffer.new(16)
     @files  = {}
+    @mode   = 0
 
     @clear_on_load = false
 
@@ -126,6 +128,14 @@ class Channel
           print("\n\x1b[31;1mERROR detected, issuing ETB to reset\x1b[0m")
           sock.write("\x17")
           next
+        elsif byte.ord == 2
+          # start of text -- data is in some different format
+          case sock.read(1).ord
+          when 1
+            # hexdump of assembly that needs disassembly
+            disassemble_code
+            next
+          end
         elsif byte != 13
           line << byte
         end
@@ -139,6 +149,31 @@ class Channel
     load_file("#{$root}/samples/payload-net.fth")
     @sock.write("\r\nident\r\n")
     @clear_on_load = true
+  end
+
+  def disassemble_code
+    code = ""
+    address = 0
+    length = 0
+
+    8.times { |i| address |= (sock.read(1).ord) << (i * 8) }
+    8.times { |i| length |= (sock.read(1).ord) << (i * 8) }
+
+    length.times do code += sock.read(1) end
+
+    output = Tempfile.new('code')
+    begin
+      output.write(code)
+      output.close()
+      $mutex.synchronize do
+        disassembly = `ndisasm -o #{address} -b 64 #{output.path}`
+        puts("\n\x1b[33m---- BEGIN DISASSEMBLY ----\n\x1b[1m")
+        puts(disassembly)
+        puts("\x1b[22m\n----- END DISASSEMBLY -----\x1b[0m\n")
+      end
+    ensure
+      output.unlink
+    end
   end
 
   def gen_iv()
