@@ -128,6 +128,10 @@ core:   mov G_INIT, rax         ; and store it for relative offsets from init
 	%include "io/net.asm"	  ; TCP transport network layer
 %endif
 	
+%ifdef IOBIND
+	%include "io/bind.asm"	  ; TCP bind port
+%endif
+
 %ifdef IOWININET
 	%include "io/wininet.asm" ; WININET http transport
 %endif

