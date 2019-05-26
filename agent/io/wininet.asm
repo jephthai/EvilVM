@@ -218,6 +218,43 @@ start_def ASM, key, "key"
 
 end_def key
 
+start_def ASM, keyq, "key?"
+	;; check if bytes are currently available
+	mov rax, G_NEXTIN	; compare input pointers
+	mov rbx, G_LASTIN	; ...
+	inc rax			; off by one otherwise
+	cmp rax, rbx		; ...
+	jne .avail		; as long as NEXTIN < LASTIN, there's data to read
+
+	;; check how long since last check
+	call W32_GetTickCount	; get our current tick count
+	mov rbx, G_LASTINET	; last time we sent
+	add rbx, G_PINGMS 	; our definition of "awhile"
+	sub rax, rbx		; get delta in milliseconds
+	js .none		; when negative, assume no bytes
+	
+	;; reset the input buffer
+	mov rax, G_INETBUFFER	; find input buffer base
+	add rax, 2048		; ...
+	mov G_LASTIN, rax	; reset the pointers
+	dec rax			; ...
+	mov G_NEXTIN, rax	; ...
+	
+.nodelay:
+	;; transceive
+	call net_transceive	; try one check for input
+	jmp code_keyq
+
+	;; grab a byte from input
+.avail:
+	pushthing 1
+	ret
+.none:
+	pushthing 0
+	ret
+	
+end_def keyq
+
 ;;; Given a buffer and length, send multiple bytes to the output stream.  This is
 ;;; largely provided as a convenience for situations where IO can be optimized
 ;;; for block communications.
