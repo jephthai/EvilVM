@@ -233,7 +233,7 @@ module EvilVM
             case mode
             when "compress"
               STDERR.puts "Encapsulating with repeated QWORD compression"
-              cmd = "ruby #{$root}/encapsulation/countsecutive.rb #{stage.path}"
+              cmd = "ruby #{$root}/encapsulation/compress.rb #{stage.path}"
               @shellcode = `#{cmd}`
             when "rle"
               STDERR.puts "RLE encoding NULL bytes in shellcode"
