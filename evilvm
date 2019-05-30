@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# shameless ripped off from:
+# https://stackoverflow.com/questions/59895/get-the-source-directory-of-a-bash-script-from-within-the-script-itself
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" 
+done
+ROOT="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+if [ "$?" -ne "0" ] ; then
+    echo "Cannot change to script directory"
+    exit 2
+fi
+
+function usage() {
+    echo
+    echo " usage: evilvm [command] [args ...]"
+    echo
+    echo " This script controls execution of EvilVM's various components."
+    echo " Each component will show help and usage information if run"
+    echo " with no arguments."
+    echo
+    echo " Available components:"
+    echo
+    echo "   serve   run the central EvilVM server console"
+    echo "   shim    run a protocol shim for non-TCP transports"
+    echo "   build   build EvilVM agents for deployment"
+    echo
+    exit 1
+}
+ 
+case $1 in
+    "serve")
+	exec bash ${ROOT}/scripts/serve.sh "$@"
+	;;
+    "shim")
+	exec bash ${ROOT}/scripts/shim.sh "$@"
+	;;
+    "build")
+	exec bash ${ROOT}/scripts/build.sh "$@"
+	;;
+    *)
+	usage
+	;;
+esac
