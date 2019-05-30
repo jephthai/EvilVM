@@ -92,7 +92,7 @@ def log(msg)
 end
 
 if ARGV.length == 0
-  puts "usage: countsecutive.rb <shellcode>"
+  puts "usage: compress.rb <shellcode>"
   exit 1
 end
 
