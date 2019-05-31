@@ -14,7 +14,7 @@ function usage() {
 
 case $2 in
     "run")
-	docker run -p 1919:1919 -p 1920:1920 -v `pwd`:`pwd` -w `pwd` -it evilvm /evilvm/server/server.rb "$@"
+	docker run -p 1919:1919 -p 1920:1920 -v `pwd`:`pwd` -v `pwd`:/evilvm -w `pwd` -it evilvm /evilvm/server/server.rb "$@"
 	;;
     *)
 	usage

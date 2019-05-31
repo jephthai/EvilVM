@@ -11,6 +11,8 @@ while [ -h "$SOURCE" ]; do
 done
 ROOT="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
+export ROOT
+
 if [ "$?" -ne "0" ] ; then
     echo "Cannot change to script directory"
     exit 2
