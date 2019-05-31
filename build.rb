@@ -268,7 +268,7 @@ if $0 == __FILE__
     :format => "binary"
   }
 
-  ARGV << "-h" if ARGV.length == 0
+  ARGV << "-h" if ARGV.length <= 1
 
   OptionParser.new do |opts|
     opts.banner = "\nUsage: build.rb [options]"
