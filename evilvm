@@ -26,7 +26,7 @@ function usage() {
     echo
     echo " Available components:"
     echo
-    echo "   serve   run the central EvilVM server console"
+    echo "   server  run the central EvilVM server console"
     echo "   shim    run a protocol shim for non-TCP transports"
     echo "   build   build EvilVM agents for deployment"
     echo
@@ -34,8 +34,8 @@ function usage() {
 }
  
 case $1 in
-    "serve")
-	exec bash ${ROOT}/scripts/serve.sh "$@"
+    "server")
+	exec bash ${ROOT}/scripts/server.sh "$@"
 	;;
     "shim")
 	exec bash ${ROOT}/scripts/shim.sh "$@"

@@ -2,7 +2,7 @@
 
 function usage() {
     echo
-    echo " usage: evilvm serve run"
+    echo " usage: evilvm server run"
     echo
     echo " This script runs the server console for EvilVM. When run"
     echo " without arguments, you will see this text.  When given the"
