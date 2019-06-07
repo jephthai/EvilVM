@@ -1,0 +1,29 @@
+#+TITLE:        Plans for EvilVM's future
+#+AUTHOR:       Josh Stone
+#+EMAIL:        yakovdk@gmail.com
+
+* What is this file?
+
+This is a place to document ideas or projects for EvilVM's future.  Sometimes I implement something that works, but could (or should) be expanded in the future.  Or sometimes I'll be thinking about EvilVM in the shower, and a neat idea occurs to me, but I have no time to work on it.  These ideas live here, so they don't disappear forever.
+
+* Features
+** Chain compilers together for safety
+Implement a payload that functions as a "hypervisor" of sorts, which can spawn compilers in separate threads, and proxy communications between them.  This will be the best way, I think, to make it possible for the user to interrupt an infinite loop, stop execution that goes awry, and recover from the worst of errors.
+
+** SMB named pipe transport
+Can probably use the ruby_smb project to write the shim.
+
+** UDP transport
+Implement block/retransmit reliability at first; maybe implement a rolling window...
+
+* Code quality
+** ICMP and HTTP transports have same structure
+After writing the ICMP transport basically as a clone of the HTTP transport, just with a different Win32 calls for the protocol guts, I realized that there is a common shape that can be refactored.  The buffering, delay timing, preparing and consuming of data can be abstracted out, and the transports can concern themselves with the protocol-specific details.
+
+** Rewrite the main server more abstractly and without using a Queue
+The one byte at a time Queue in the server is the predominant source of slowness.  And rearranging the code a bit will make it easier to add more semantic output modes (ala the "seeasm" mechanism for disassembling on the server).
+
+* TODONE list
+** ICMP transport
+I've often found it useful in weird situations while pen-testing, and EvilVM can't be complete without an ICMP tunnel transport!
+
