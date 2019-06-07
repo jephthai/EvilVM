@@ -166,6 +166,11 @@ start_def INL, or, "or"
 	add PSP, CELL
 end_def or
 	
+start_def INL, xor, "xor"
+	xor TOS, [PSP]
+	add PSP, CELL
+end_def xor
+	
 ;;; ------------------------------------------------------------------------
 ;;; Counted string comparison
 ;;; ------------------------------------------------------------------------
