@@ -1,5 +1,8 @@
 ;;; Beginning of GetProcAddress in little endian hex
 %define ACORPTEG 0x41636f7250746547
+%define UNIxKERN 0x004e00520045004b
+%define UNIxEL32 0x00320033004c0045
+%define UNIx.DLL 0x004c004c0044002e
 	
 ;;; ------------------------------------------------------------------------
 ;;; Macro to do a Win32 function call 
@@ -43,11 +46,50 @@ ioentry:
 ;;; Find KERNEL32.DLL, which is the key to finding all other useful stuff
 ;;; ------------------------------------------------------------------------
 	
+	;; I used to find KERNEL32.DLL by looking for the total path length
+	;; (since it would be c:\windows\system32\kernel32.dll, and I thought
+	;; that was pretty distinctive.  But no, I ran the code one day from
+	;; a program whose path length was the same, and boom, failed run.
+	;; 
+	;; So I thought, I'll do a string match... but sometimes KERNEL32.DLL
+	;; is loaded.  Sometimes kernel32.dll is loaded.  Maybe mixed case.
+	;; So this is my hacky way to do a case insensitive match.
+	;;
+	;; Yeah, maybe it's always the third one... but I'll take no chances.
+
 dllloop:
-	cmp byte [rbx+0x38], 64 ; KERNEL32.DLL path is 64 bytes long
+	cmp byte [rbx+0x48], 24	; check length of name
+	cmovne rbx, [rbx]	; update only if mismatch
+	jne dllloop		; must match length first
+	
+	mov r13, 0xdfdfdfdfdfdfdfdf
+	mov r14, UNIxKERN
+	mov r15, [rbx+0x50]	; get pointer to base name
+	mov r12, [r15]		; get string
+	and r12, r13		; downcase it
+	cmp r12, r14		; test for 'kern' in unicode
+	cmovne rbx, [rbx]	; update only if bogus
+	jne dllloop		; must match first half of name
+
+	mov r13, 0xffffffffdfdfdfdf
+	mov r14, UNIxEL32	;
+	mov r15, [rbx+0x50]	; get pointer to next 4 of base name
+	mov r12, [r15+8]	; get string
+	and r12, r13		; downcase it
+	cmp r12, r14		; test for 'el32' in unicode
+	cmovne rbx, [rbx]	; update only if bogus
+	jne dllloop		; must match second half of name
+
+	mov r13, 0xdfdfdfdfdfdfffff
+	mov r14, UNIx.DLL	;
+	mov r15, [rbx+0x50]	; get pointer to last 3 of base name
+	mov r12, [r15+16]	; get string
+	and r12, r13		; downcase it
+	cmp r12, r14		; test for '.dll' in unicode
+	cmovne rbx, [rbx]	; update only if bogus
+	jne dllloop		; must match extension
+	
 	mov rax, [rbx + 0x20]	; save base address
-	mov rbx, [rbx]		; advance to next entry
-	jne dllloop		; try again if cmp didn't match
 
 found:
 	enter GLOBAL_SPACE, 0	; make space to store global variables
