@@ -399,14 +399,23 @@ kernel32 1 dllfun FindClose     FindClose
     .file tail
   then ;
 
+variable last-char
+
 public{ 
 
 : ls ( addr u -- )
+  2dup + 1- c@ last-char ! \ helpful for error checking
   find-first 0 > if
     .pre .file ls .post
     HANDLE @ FindClose drop
   else
-    .err
+    last-char @ [char] \ =
+    last-char @ [char] / =
+    or if 
+      red  ." To list directories, add a *\n\x03" clear
+    else
+      .err
+    then
   then ;
 
 : dir  s" *" ls ;
