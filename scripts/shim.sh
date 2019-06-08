@@ -13,6 +13,7 @@ function usage() {
 	echo " Supported protocol shims:"
 	echo
 	echo "     http"
+	echo "     tcpcrypt"
 	echo
 
 	exit 1
@@ -31,6 +32,8 @@ case $2 in
     "http")
 	docker exec -it $id /evilvm/server/http-server.rb
     ;;
+    "tcpcrypt")
+	docker exec -it $id /evilvm/server/tcpcrypt-server.rb
     *)
 	usage
 	;;
