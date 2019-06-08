@@ -16,6 +16,9 @@ Can probably use the ruby_smb project to write the shim.
 ** UDP transport
 Implement block/retransmit reliability at first; maybe implement a rolling window...
 
+** Seamless file upload and download
+Current download is hackish. The `seeasm` control code for adding metadata to output could make this much better. 
+
 * Code quality
 ** ICMP and HTTP transports have same structure
 After writing the ICMP transport basically as a clone of the HTTP transport, just with a different Win32 calls for the protocol guts, I realized that there is a common shape that can be refactored.  The buffering, delay timing, preparing and consuming of data can be abstracted out, and the transports can concern themselves with the protocol-specific details.
