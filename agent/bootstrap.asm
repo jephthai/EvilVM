@@ -1,8 +1,5 @@
 ;;; Beginning of GetProcAddress in little endian hex
 %define ACORPTEG 0x41636f7250746547
-%define UNIxKERN 0x004e00520045004b
-%define UNIxEL32 0x00320033004c0045
-%define UNIx.DLL 0x004c004c0044002e
 	
 ;;; ------------------------------------------------------------------------
 ;;; Macro to do a Win32 function call 
@@ -46,50 +43,39 @@ ioentry:
 ;;; Find KERNEL32.DLL, which is the key to finding all other useful stuff
 ;;; ------------------------------------------------------------------------
 	
-	;; I used to find KERNEL32.DLL by looking for the total path length
-	;; (since it would be c:\windows\system32\kernel32.dll, and I thought
-	;; that was pretty distinctive.  But no, I ran the code one day from
-	;; a program whose path length was the same, and boom, failed run.
-	;; 
-	;; So I thought, I'll do a string match... but sometimes KERNEL32.DLL
-	;; is loaded.  Sometimes kernel32.dll is loaded.  Maybe mixed case.
-	;; So this is my hacky way to do a case insensitive match.
-	;;
-	;; Yeah, maybe it's always the third one... but I'll take no chances.
+	;; This is probably overly cautious, but I don't want to assume
+	;; that KERNEL32.DLL is always the third one, or some such.  So
+	;; this is a sort of hacky way to do a case insensitive string
+	;; match on the module name.
 
 dllloop:
 	cmp byte [rbx+0x48], 24	; check length of name
 	cmovne rbx, [rbx]	; update only if mismatch
 	jne dllloop		; must match length first
 	
-	mov r13, 0xdfdfdfdfdfdfdfdf
-	mov r14, UNIxKERN
-	mov r15, [rbx+0x50]	; get pointer to base name
-	mov r12, [r15]		; get string
-	and r12, r13		; downcase it
-	cmp r12, r14		; test for 'kern' in unicode
-	cmovne rbx, [rbx]	; update only if bogus
-	jne dllloop		; must match first half of name
-
-	mov r13, 0xffffffffdfdfdfdf
-	mov r14, UNIxEL32	;
-	mov r15, [rbx+0x50]	; get pointer to next 4 of base name
-	mov r12, [r15+8]	; get string
-	and r12, r13		; downcase it
-	cmp r12, r14		; test for 'el32' in unicode
-	cmovne rbx, [rbx]	; update only if bogus
-	jne dllloop		; must match second half of name
-
-	mov r13, 0xdfdfdfdfdfdfffff
-	mov r14, UNIx.DLL	;
-	mov r15, [rbx+0x50]	; get pointer to last 3 of base name
-	mov r12, [r15+16]	; get string
-	and r12, r13		; downcase it
-	cmp r12, r14		; test for '.dll' in unicode
-	cmovne rbx, [rbx]	; update only if bogus
-	jne dllloop		; must match extension
+	call .name
 	
-	mov rax, [rbx + 0x20]	; save base address
+	;; This is 'kernel32.dll', with each byte ANDed with 0xdf, which
+	;; has the effect of capitalizing all the alphabetic chars
+	
+	EncodeEncap "KERNEL32.DLL"
+	
+.name:  pop rax			; get pointer to encoded kernel32.dll name
+	mov r15, [rbx+0x50]	; pointer to base name
+	mov rcx, 12		; bytes to compare
+
+.loop:	mov dl, [rax]		; get two bytes to compare
+	mov dil, [r15]		; ...
+	and dil, 0xdf		; encode the char
+	cmp dl, dil		; compare them
+	cmovne rbx, [rbx]	; on mismatch, go to next link
+	jne dllloop		; try next module
+	inc rax			; next char
+	add r15, 2		; skip two, it's unicode
+	loop .loop		; go through whole string
+
+	;; if we fall through, we found KERNEL32.DLL!
+	mov rax, [rbx + 0x20]
 
 found:
 	enter GLOBAL_SPACE, 0	; make space to store global variables

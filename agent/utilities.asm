@@ -53,6 +53,13 @@
 	push %5
 %endmacro
 
-	
-
+%macro EncodeEncap 1
+%strlen count %1
+%assign i 1
+%rep count
+%substr mychar %1 i
+	db mychar & 0xdf
+%assign i i + 1
+%endrep
+%endmacro
 	
