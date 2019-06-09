@@ -29,6 +29,8 @@ kernel32   1   dllfun SetLastError  SetLastError
 kernel32   0   dllfun GetLastError  GetLastError
 kernel32   1   dllfun CloseHandle   CloseHandle
 kernel32   1   dllfun LoadLibrary   LoadLibraryA
+kernel32   7   dllfun FormatMessage FormatMessageA
+kernel32   1   dllfun LocalFree     LocalFree
 
 ' magenta value OUTCOLOR
 
@@ -38,8 +40,6 @@ kernel32   1   dllfun LoadLibrary   LoadLibraryA
 
 : loadlib readline drop LoadLibrary ;
 
-: .err   GetLastError red ." Error! " . clear cr ;
-: !err   SetLastError .err ;
 : .pre   outcol -bold ." \n---- BEGIN OUTPUT ----\n" +bold ;
 : .post  outcol -bold ." ----- END OUTPUT -----\n\x03" normal ;
 
@@ -47,6 +47,21 @@ kernel32   1   dllfun LoadLibrary   LoadLibraryA
 : c->str     dup c->str ;
 
 : .cstring   c->str type ; 
+
+variable errbuf
+
+: .err
+  $1300 0 GetLastError dup red cr ." Error: " .
+  0 errbuf 0 0 FormatMessage if
+    errbuf @ dup .cstring cr
+    LocalFree drop
+  else
+    cr
+  then
+  clear
+;
+
+: !err   SetLastError .err ;
 
 : cstrcmp ( addr addr -- cmp )
   >r c->str r> c->str strcmp
@@ -409,12 +424,11 @@ public{
     .pre .file ls .post
     HANDLE @ FindClose drop
   else
+    .err
     last-char @ [char] \ =
     last-char @ [char] / =
     or if 
       red  ." To list directories, add a *\n\x03" clear
-    else
-      .err
     then
   then ;
 
