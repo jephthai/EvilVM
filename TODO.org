@@ -10,6 +10,9 @@ This is a place to document ideas or projects for EvilVM's future.  Sometimes I 
 ** Chain compilers together for safety
 Implement a payload that functions as a "hypervisor" of sorts, which can spawn compilers in separate threads, and proxy communications between them.  This will be the best way, I think, to make it possible for the user to interrupt an infinite loop, stop execution that goes awry, and recover from the worst of errors.
 
+** Implement try / catch idiom
+I realized that I can add exception handling easily, but creating a stack of exception restarts, and some handling in the "reset" word so that it can resume execution somewhere other than the standard error handler.
+
 ** SMB named pipe transport
 Can probably use the ruby_smb project to write the shim.
 
