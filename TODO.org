@@ -13,9 +13,6 @@ Implement a payload that functions as a "hypervisor" of sorts, which can spawn c
 ** Implement try / catch idiom
 I realized that I can add exception handling easily, but creating a stack of exception restarts, and some handling in the "reset" word so that it can resume execution somewhere other than the standard error handler.
 
-** SMB named pipe transport
-Can probably use the ruby_smb project to write the shim.
-
 ** UDP transport
 Implement block/retransmit reliability at first; maybe implement a rolling window...
 
@@ -32,3 +29,6 @@ The one byte at a time Queue in the server is the predominant source of slowness
 * TODONE list
 ** ICMP transport
 I've often found it useful in weird situations while pen-testing, and EvilVM can't be complete without an ICMP tunnel transport!
+** SMB named pipe transport
+Can probably use the ruby_smb project to write the shim.
+
