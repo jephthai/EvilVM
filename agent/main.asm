@@ -124,6 +124,10 @@ core:   mov G_INIT, rax         ; and store it for relative offsets from init
 %endif
 	%include "genio.asm" 	  ; Contains defs common to all IO layers
 
+%ifdef IONAMEDPIPES
+	%include "io/named-pipes.asm" ; SMB named pipes transport
+%endif
+
 %ifdef IOICMP
 	%include "io/icmp.asm"	; ICMP transport layer
 %endif

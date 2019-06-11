@@ -29,6 +29,13 @@ module EvilVM
     end
   end
 
+  class NamedPipesProfile
+    attr_accessor :flags
+    def initialize
+      @flags = [ "-DIONAMEDPIPES" ]
+    end
+  end
+
   class ICMPProfile < BaseProfile
     def initialize(ip)
       super()
@@ -285,7 +292,7 @@ if $0 == __FILE__
   ARGV << "-h" if ARGV.length <= 1
 
   OptionParser.new do |opts|
-    opts.banner = "\nUsage: build.rb [options]"
+    opts.banner = "\n\x1b[1mUsage: build.rb [options]\x1b[22m"
     
     opts.separator ""
     opts.separator " Builds an EvilVM agent.  Choose a transport layer, configure it, and determine"
@@ -293,16 +300,17 @@ if $0 == __FILE__
     opts.separator " into other programs or scripts, raw shellcode generation, or PE executables."
 
     opts.separator ""
-    opts.separator "Payload Transport Layers:"
-    opts.on("-n", "--net", "Build network payload") { |p| options[:payload] = :netio }
-    opts.on("-s", "--streams", "Build std streams payload") { |p| options[:payload] = :stdio }
-    opts.on("-H", "--http", "Build HTTP payload") { |p| options[:payload] = :httpio }
-    opts.on("-m", "--memio", "Build shared memory payload") { |p| options[:payload] = :memio }
-    opts.on("-b", "--bind", "Build TCP bind payload") { |p| options[:payload] = :bindio }
+    opts.separator "\x1b[1mPayload Transport Layers:\x1b[22m"
+    opts.on("-n", "--net", "TCP reverse network payload") { |p| options[:payload] = :netio }
+    opts.on("-b", "--bind", "TCP bind payload") { |p| options[:payload] = :bindio }
+    opts.on("-s", "--streams", "stdin/stdout streams payload") { |p| options[:payload] = :stdio }
+    opts.on("-H", "--http", "HTTP payload") { |p| options[:payload] = :httpio }
+    opts.on("-m", "--memio", "Shared memory payload") { |p| options[:payload] = :memio }
     opts.on(nil, "--icmp", "Icmp ping transport") { |p| options[:payload] = :icmp }
+    opts.on(nil, "--named-pipes", "SMB named pipes transport") { |p| options[:payload] = :namedpipes }
 
     opts.separator ""
-    opts.separator "Transport Options:"
+    opts.separator "\x1b[1mTransport Options:\x1b[22m"
     opts.on("-u", "--uri URI", "URI (path) for HTTP payloads") { |h| options[:uri] = h }
     opts.on("-i", "--ip IP", "IP for network payloads") { |i| options[:ip] = i }
     opts.on("-p", "--port PORT", "TCP port for network payloads") { |p| options[:port] = p.to_i }
@@ -313,7 +321,7 @@ if $0 == __FILE__
     }
 
     opts.separator ""
-    opts.separator "Output Options:"
+    opts.separator "\x1b[1mOutput Options:\x1b[22m"
 
     opts.on("-d", "--debug", "Debug output (troubleshoot assembly)") { |d| 
       options[:debug] = d
@@ -334,14 +342,14 @@ if $0 == __FILE__
     }
 
     opts.separator ""
-    opts.separator "Encapsulation:"
+    opts.separator "\x1b[1mEncapsulation:\x1b[22m"
 
     opts.on("-e", "--encap ENCAP", "Encapsulations ('list' to see options)") { |e|
       options[:encap] = e
     }
 
     opts.separator ""
-    opts.separator "Profile Options:"
+    opts.separator "\x1b[1mProfile Options:\x1b[22m"
 
     opts.on("-P", "--profile FILE", "Read options from YAML profile") { |p| 
       options[:profile] = p
@@ -399,6 +407,8 @@ if $0 == __FILE__
     profile = EvilVM::MemProfile.new()
   when :icmp
     profile = EvilVM::ICMPProfile.new(options[:ip])
+  when :namedpipes
+    profile = EvilVM::NamedPipesProfile.new()
   else
     puts("ERROR: payload must be specified")
     exit 2
