@@ -31,8 +31,9 @@ module EvilVM
 
   class NamedPipesProfile
     attr_accessor :flags
-    def initialize
+    def initialize(pipe)
       @flags = [ "-DIONAMEDPIPES" ]
+      @flags << "-DNAMED_PIPE=\\\"#{pipe}\\\"" if pipe
     end
   end
 
@@ -312,10 +313,11 @@ if $0 == __FILE__
     opts.separator ""
     opts.separator "\x1b[1mTransport Options:\x1b[22m"
     opts.on("-u", "--uri URI", "URI (path) for HTTP payloads") { |h| options[:uri] = h }
-    opts.on("-i", "--ip IP", "IP for network payloads") { |i| options[:ip] = i }
+    opts.on("-i", "--ip IP", "IP for network payloads") { |i| options[:ip] = i; puts "IP: #{i}" }
     opts.on("-p", "--port PORT", "TCP port for network payloads") { |p| options[:port] = p.to_i }
     opts.on("-k", "--key KEY,KEY", "Crypto keys for crypto layer") { |k| options[:keys] = k }
     opts.on("-c", "--crypto", "Enable crypto layer if available") { |c| options[:crypto] = c }
+    opts.on(true, "--pipe PIPE", "Pipe name for SMB transport") { |p| options[:pipe] = p; puts "PIPE: #{p}" }
     opts.on("-I", "--interval MS", "Interval for periodic transports") { |i|
       options[:interval] = i.to_i
     }
@@ -408,7 +410,7 @@ if $0 == __FILE__
   when :icmp
     profile = EvilVM::ICMPProfile.new(options[:ip])
   when :namedpipes
-    profile = EvilVM::NamedPipesProfile.new()
+    profile = EvilVM::NamedPipesProfile.new(options[:pipe])
   else
     puts("ERROR: payload must be specified")
     exit 2

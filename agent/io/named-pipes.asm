@@ -1,5 +1,9 @@
+%ifndef PIPE_PATH
+	%define PIPE_PATH "\\.\pipe"
+%endif
+
 %ifndef NAMED_PIPE
-	%define NAMED_PIPE "\\.\pipe\evilpipe"
+	%define NAMED_PIPE "evilpipe"
 %endif
 
 %ifndef DELAY
@@ -45,7 +49,7 @@ start_def ASM, initio, "initio"
 	GetProcAddress  code_initio.a4 - code_initio.a, W32_PEEKPIPE
 	
 	call .c
-	db NAMED_PIPE, 0
+	db PIPE_PATH, '\', NAMED_PIPE, 0
 .c:	pop rcx
 	mov rdx, 3
 	mov r8, 0
