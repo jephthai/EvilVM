@@ -15,7 +15,7 @@ The primary use case for EvilVM is to deploy the agent on a remote system, and i
 Technology choices are made with the project’s goals in mind:
 
   1. **Small, easily deployed payload:** the EvilVM agent is a position independent, x86_64 shellcode that weighs in somewhere between 5-10KB, depending on options and encapsulation.
-  2. **Remote I/O streams:** the standard I/O paradigm for interacting with the language is via abstracted network-capable streams, allowing transport over TCP, HTTP, etc.
+  2. **Remote I/O streams:** the standard I/O paradigm for interacting with the language is via abstracted network-capable streams, allowing transport over file descriptors, TCP (bind and reverse), HTTP, shared memory, ICMP, and SMB named pipes.
   3. **Low level access:** the runtime environment provides direct access to compiler internals, machine code, and direct memory interaction.
   4. **Native interoperability:** a simple C FFI is provided, making it easy to import DLLs, find exports, and wrap them with Forth function definitions.
   5. **Expressive language:** while Forth provides a ‘low floor’, functioning close to the assembly language level, it also offers a ‘high ceiling’, permitting runtime syntactic extension of the language, and is well-suited to metaprogramming techniques.
