@@ -76,7 +76,7 @@ save:   sub rax, save - main	; find entry point for shellcode
 
 	xor ecx, ecx		; NULL address
 	mov edx, DICTSZ		; space for dictionary
-	mov G_DSIZE, edx	; save this for introspection
+	mov G_DSIZE, rdx	; save this for introspection
 	mov r8d, 0x3000		; allocation type
 	mov r9d, 0x40		; protection flags
 	call W32_VirtualAlloc	; ...
