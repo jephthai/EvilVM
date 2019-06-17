@@ -19,6 +19,8 @@ Implement block/retransmit reliability at first; maybe implement a rolling windo
 ** Seamless file upload and download
 Current download is hackish. The `seeasm` control code for adding metadata to output could make this much better. 
 
+** Windows server/build compatibility
+Github user @BEN00262 asked about running EvilVM entirely on Windows.  It turns out this might not be too hard to achieve, at least for the vast majority of the system (ICMP shim being the hardest, I think, since it will require some real effort for the server side).  Primary hurdles: account for `readline` differences, and make `build.rb` work well on a Windows box with necessary prereqs installed.
 * Code quality
 ** ICMP and HTTP transports have same structure
 After writing the ICMP transport basically as a clone of the HTTP transport, just with a different Win32 calls for the protocol guts, I realized that there is a common shape that can be refactored.  The buffering, delay timing, preparing and consuming of data can be abstracted out, and the transports can concern themselves with the protocol-specific details.
