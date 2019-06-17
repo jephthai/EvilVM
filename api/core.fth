@@ -538,7 +538,6 @@ public
 \ Quotations so crazy they just might work (anonymous words)
 \ ------------------------------------------------------------------------
 
-hex
 private
 
 \ Allow throw-away quotations to restore the dictionary pointer
@@ -546,15 +545,18 @@ variable BACKUP
 
 public{
 
-: { here dup BACKUP ! compile ;
-: } c3 c, r> drop ; immediate
+\ this version works in the outer interpreter
+: { here dup BACKUP ! compile ; immediate
+: } $c3 c, r> drop ; immediate
+
+\ a variant for compiling quotations into words
+: '{ [branch] here compile ; immediate
+: }' >r $c3 c, -jump r> litq r> drop ; immediate
 
 \ if you run it immediately, we can throw it away
-: }! c3 c, execute r> drop BACKUP @ !here ; immediate
+: }! $c3 c, execute r> drop BACKUP @ !here ; immediate
 
 }public
-
-dec
 
 \ ------------------------------------------------------------------------
 \ Output words for prettier I/O
@@ -688,10 +690,14 @@ public{
 
 }public
 
-time variable seed seed !
+\ ------------------------------------------------------------------------
+\ A very simple random number generator (good for 16-bit numbers)
+\ ------------------------------------------------------------------------
 
-: rand  22695477 seed @ * 1+ [ 4294967296 litq ] /mod drop dup seed ! ;
-: /rand rand 2 / swap /mod drop ;
+19789 variable seed seed !
+
+: rand     1337 seed @ * 3909 + 298332 /mod drop dup seed ! ;
+: /rand    rand 3 >> swap /mod drop ;
 
 \ ------------------------------------------------------------------------
 \ Heap allocation
