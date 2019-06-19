@@ -55,6 +55,7 @@ variable screen
 variable memory
 variable width
 variable height
+variable initial
 variable bitmap
 variable oldbmp
 variable buffer
@@ -67,8 +68,8 @@ create info BITMAPINFOHEADER 2 * allot
   screen @ CreateCompatibleDC memory !
   screen @ HORZRES GetDeviceCaps width !
   screen @ VERTRES GetDeviceCaps height !
-  screen @ width @ height @ CreateCompatibleBitmap bitmap !
-  memory @ bitmap @ SelectObject oldbmp !
+  screen @ width @ height @ CreateCompatibleBitmap initial !
+  memory @ initial @ SelectObject oldbmp !
   memory @ 0 0 width @ height @ screen @ 0 0 SRCCOPY BitBlt drop
   memory @ oldbmp @ SelectObject bitmap !
   
@@ -78,11 +79,13 @@ create info BITMAPINFOHEADER 2 * allot
   info biHeight get info biWidth get * 4 * allocate buffer !
   memory @ bitmap @ 0 info biHeight get buffer @ info DIB_RGB_COLORS GetDIBits drop
 
+  oldbmp @ DeleteObject drop
   memory @ DeleteDC drop
   screen @ DeleteDC drop
 ;
 
 : free-screenshot
+  initial @ DeleteObject drop
   buffer @ free
   buffer off
 ;
