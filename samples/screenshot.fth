@@ -25,9 +25,6 @@ user32.dll 0 dllfun GetDesktopWindow GetDesktopWindow
 user32.dll 2 dllfun GetWindowRect GetWindowRect
 user32.dll 1 dllfun GetDC GetDC
 user32.dll 2 dllfun ReleaseDC ReleaseDC
-user32.dll 4 dllfun SendMessage SendMessageA
-user32.dll 4 dllfun SendNotifyMessage SendNotifyMessageA
-user32.dll 1 dllfun GetCursorPos GetCursorPos
 
 gdi32.dll  4 dllfun CreateDC CreateDCA
 gdi32.dll  1 dllfun DeleteDC DeleteDC
@@ -52,11 +49,6 @@ struct BITMAPINFOHEADER
   DWORD    field biClrUsed
   DWORD    field biClrImportant
   DWORD    field bmiColors
-end-struct
-
-struct POINT
-  DWORD    field POINTx
-  DWORD    field POINTy
 end-struct
 
 variable screen
@@ -90,117 +82,16 @@ create info BITMAPINFOHEADER 2 * allot
   screen @ DeleteDC drop
 ;
 
-: semi [char] ; emit ;
-: pixel ( x y -- col ) info biHeight get swap - 1- info biWidth get * + 4 * buffer @ + d@ ;
-: split-channels ( n -- b g r ) 3 0 do dup $ff and swap 8 >> loop drop ;
-: ansi ( r g b -- num ) 3 0 do semi 0 .r loop ;
-: draw ." \x1b[48;2" ansi ." m  " ;
-: gray ( r g b -- code ) + + 32 / 232 + ;
-: draw24 ." \x1b[48;5;" 0 .r ." m  " ;
-
-12 value factor
-
-variable red[]
-variable green[]
-variable blue[]
-
-: virtual-pixel ( x y -- )
-  red[] off
-  green[] off
-  blue[] off
-
-  factor * dup factor + swap do
-    dup factor * dup factor + swap do
-      i j pixel
-      dup $ff and blue[] +! 8 >>
-      dup $ff and green[] +! 8 >>
-      $ff and red[] +!
-    loop
-  loop
-  
-  drop
-
-  blue[] @ factor dup * /
-  green[] @ factor dup * /
-  red[] @ factor dup * /
-;
-
-: test
-  [to] factor
-  cr info biHeight get factor / 0 do 
-    info biWidth get factor /  0 do 
-      i j virtual-pixel draw
-    loop 
-    clear cr 
-  loop
-;
-
 : free-screenshot
   buffer @ free
   buffer off
 ;
 
-variable point
-POINT allocate point !
-
-256 value win-x
-192 value win-y
-
-: cursor-window
-  point @ GetCursorPos drop
-  point @ POINTx get win-x 2 / - 0 max info biWidth get win-x - min
-  point @ POINTy get win-y 2 / - 0 max info biHeight get win-y - min
-  .s
-;
-
-: show-hot-zone
-  screenshot
-  cursor-window
-  dup win-y + swap do
-    dup dup win-x + swap do
-      i point @ POINTx get = 
-      j point @ POINTy get = or if
-	." \x1b[31;7m  \x1b[0m"
-      else
-	i j pixel split-channels gray draw24
-      then
-    loop
-    clear cr
-  loop
-  drop
-  free-screenshot
-;
-
-: page     ." \x1b[2J\x1b[1;1H" ;
-: >home    ." \x1b[1;1H" ;
-: -cursor  ." \x1b[?25l" ;
-: +cursor  ." \x1b[?25h" ;
-
-: show-screen
-  screenshot
-  8 test
-  free-screenshot
-;
-
-: monitor-mouse
-  page -cursor consume
-  begin
-    key? until
-    >home
-    show-screen
-    \ show-hot-zone
-    250 ms
-  repeat
-  +cursor consume
-;
-
-variable stuff
-
 : .quad
   here ! here 8 type
 ;
 
-: .pixel
+: >grayscale
   3 0 do dup $ff and swap 8 >> loop drop
   + + 3 / 
 ;
@@ -212,35 +103,47 @@ variable offset
 variable clen
 variable cbuf
 
+$f0 value fidelity
+
 : view-desktop
+  .pre -bold
+
+  ." Taking screenshot... "
+
   screenshot
+
+  ." Done.\n"
 
   width @ height @ * dup total !
   allocate dup region !
   offset !
 
-  ." Total: " total @ . cr
-  
+  ." Image has " +bold total @ . -bold ." pixels\n"
 
   buffer @
   total @ 0 do
-    dup d@ .pixel $f8 and offset @ c!
+    dup d@ >grayscale fidelity and offset @ c!
     1 offset +!
     4 +
   loop
 
   region @ total @ 
-  .s
   compress 2dup
 
-  ." Sending data " .s
+  dup ." Compressed to " +bold . -bold ." bytes with \x1b[1mLZMS\x1b[22m\n"
+
+  ." Sending data stream... "
   2 emit 2 emit
   width @ .quad
   height @ .quad
   dup .quad
   type
 
+  ." Done. Reclaiming resources.\n"
+
   drop free 
   free-screenshot
   region @ free
+
+  .post
 ;

@@ -15,7 +15,15 @@ $LOAD_PATH << $root + "/server/"
 
 puts("Root dir is #{$root}")
 
-require 'rmagick'
+begin
+  require 'rmagick'
+  $rmagick = true
+rescue Exception => e
+  puts("NOTE: `rmagick' not installed, screenshots will be written to disk, not displayed")
+  $rmagick = false
+end
+
+require "time"
 require "socket"
 require "readline"
 require "thread"
@@ -173,34 +181,57 @@ class Channel
   end
   
   def handle_image
-    puts("Handling image")
-
     width = 0
     height = 0
     length = 0
+    raw = nil
 
     8.times { |i| width |= (sock.read(1).ord) << (i * 8) }
     8.times { |i| height |= (sock.read(1).ord) << (i * 8) }
     8.times { |i| length |= (sock.read(1).ord) << (i * 8) }
 
-    puts("Image is #{width}x#{height}, compressed to #{length} bytes")
-
-    image = Magick::Image.new(width, height)
-    proc = IO.popen("#{$root}/decompress", "rb+")
-    puts("Reading #{length} bytes of compressed data")
     bytes = sock.read(length)
-    proc.write(bytes)
-    raw = proc.read()
-    puts("Read #{raw.length} bytes from decompression")
-    proc.close()
 
-    image.import_pixels(0,0,width,height,"I",raw)
-    image.flip!
-    
-    puts("Displaying it")
-    Thread.new do 
-      image.level(0,224 * 256).display()
+    # use libwim to decompress LZMS algorithm
+    begin
+      proc = IO.popen("#{$root}/server/decompress", "rb+")
+      proc.write(bytes)
+      raw = proc.read()
+      proc.close()
+    rescue Exception => e
+      puts("\x1b[s\x1b[31;1mError decompressing... did you `make` in #{$root}/server?\x1b[u")
+      return
     end
+
+    if $rmagick
+
+      # we can pop up a window showing the screenshot, talk about
+      # awesome U/X!
+      
+      image = Magick::Image.new(width, height)
+      image.import_pixels(0,0,width,height,"I",raw)
+      image.flip!
+    
+      puts("Displaying it")
+      Thread.new do 
+        image.level(0,224 * 256).display()
+      end
+    end
+
+    # generate a "hard copy" as a PGM
+    outfile = Tempfile.new(['screenshot-', '.pgm'])
+    outfile.write("P5\n")
+    outfile.write("# screenshot #{DateTime.now}\n")
+    outfile.write("#{width} #{height}\n255\n")
+
+    height.times do |row|
+      # BMPs are upside down, so we rearrange it, sigh
+      offset = (height - row - 1) * width
+      outfile.write(raw[offset...offset+width])
+    end
+
+    outfile.close
+    puts("\n\x1b[s\x1b[33;1mWrote screenshot to #{outfile.path}\x1b[u")
   end
 
   def disassemble_code
