@@ -15,6 +15,7 @@ $LOAD_PATH << $root + "/server/"
 
 puts("Root dir is #{$root}")
 
+require 'rmagick'
 require "socket"
 require "readline"
 require "thread"
@@ -24,6 +25,7 @@ require "digest"
 require 'pry'
 require 'minim.rb'
 require 'base64'
+require 'tempfile'
 
 def putshl(msg, chars)
   print("\x1b[35m")
@@ -135,6 +137,14 @@ class Channel
             # hexdump of assembly that needs disassembly
             disassemble_code
             next
+          when 2
+            # raw image data
+            handle_image
+            next
+          when 3
+            # download raw data
+            handle_download
+            next
           end
         elsif byte != 13
           line << byte
@@ -149,6 +159,48 @@ class Channel
     load_file("#{$root}/samples/payload-net.fth")
     @sock.write("\r\nident\r\n")
     @clear_on_load = true
+  end
+
+  def handle_download
+    len = 0
+    8.times { |i| len |= (sock.read(1).ord) << (i * 8) }
+
+    data = sock.read(len)
+    file = Tempfile.new('download')
+    file.write(data)
+    file.close()
+    puts("\x1b[33mDownloaded \x1b[1m#{len} byte\x1b[22m file to \x1b[1m#{file.path}\x1b[0m")
+  end
+  
+  def handle_image
+    puts("Handling image")
+
+    width = 0
+    height = 0
+    length = 0
+
+    8.times { |i| width |= (sock.read(1).ord) << (i * 8) }
+    8.times { |i| height |= (sock.read(1).ord) << (i * 8) }
+    8.times { |i| length |= (sock.read(1).ord) << (i * 8) }
+
+    puts("Image is #{width}x#{height}, compressed to #{length} bytes")
+
+    image = Magick::Image.new(width, height)
+    proc = IO.popen("#{$root}/decompress", "rb+")
+    puts("Reading #{length} bytes of compressed data")
+    bytes = sock.read(length)
+    proc.write(bytes)
+    raw = proc.read()
+    puts("Read #{raw.length} bytes from decompression")
+    proc.close()
+
+    image.import_pixels(0,0,width,height,"I",raw)
+    image.flip!
+    
+    puts("Displaying it")
+    Thread.new do 
+      image.level(0,224 * 256).display()
+    end
   end
 
   def disassemble_code
