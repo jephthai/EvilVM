@@ -94,9 +94,22 @@ create info BITMAPINFOHEADER 2 * allot
   here ! here 8 type
 ;
 
+\ a bunch of filters to choose from for converting color pixels to grayscale
+: decomp+     max max ;
+: decomp~     2dup < if swap then -rot 2dup < if swap then nip max ;
+: decomp-     min min ;
+: redonly     nip nip ;
+: greenonly   drop nip ;
+: blueonly    2drop ;
+: average     + + 3 / ;
+: luminosity  1 >> + swap 1 >> + 1 >> ;
+: luminosity2 1 >> + swap 2 >> + 3 * 5 / 255 min ;
+
+' luminosity value convert-fn
+
 : >grayscale
   3 0 do dup $ff and swap 8 >> loop drop
-  + + 3 / 
+  convert-fn execute
 ;
 
 variable total
@@ -106,17 +119,36 @@ variable offset
 variable clen
 variable cbuf
 
-$f0 value fidelity
+$f8 value fidelity
 
-: view-desktop
-  .pre -bold
+: @px ( x y -- color )
+  swap width @ min swap height @ min
+  width @ * + 4 * buffer @ + d@
+;
 
-  ." Taking screenshot... "
+: half-image
+  width @ 1 >> height @ 1 >> * dup total !
+  allocate dup region !
+  offset !
 
-  screenshot
+  height @ 1 >> 0 do
+    width @ 1 >> 0 do
+      i 2 * j 2 *       @px >grayscale
+      i 2 * 1+ j 2 *    @px >grayscale
+      i 2 * j 2 * 1+    @px >grayscale
+      i 2 * 1+ j 2 * 1+ @px >grayscale
 
-  ." Done.\n"
+      + + + 2 >> fidelity and offset @ c!
 
+      1 offset +!
+    loop
+  loop
+
+  width @ 1 >> width !
+  height @ 1 >> height !
+;
+
+: full-image
   width @ height @ * dup total !
   allocate dup region !
   offset !
@@ -129,6 +161,20 @@ $f0 value fidelity
     1 offset +!
     4 +
   loop
+;
+
+' full-image value scaler
+
+: view-desktop
+  .pre -bold
+
+  ." Taking screenshot... "
+
+  screenshot
+
+  ." Done.\n"
+
+  scaler execute 
 
   region @ total @ 
   compress 2dup
