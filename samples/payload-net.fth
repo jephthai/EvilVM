@@ -98,10 +98,12 @@ variable bytes
 private
 
 kernel32 1 dllfun ExitProcess ExitProcess
+kernel32 1 dllfun ExitThread ExitThread
 
 public{
 
 : bye 0 ExitProcess ;
+: ~bye 0 ExitThread ;
 
 }public
 
@@ -246,7 +248,7 @@ variable running
 \ outer interpreter to get the string for CreateProcess.  This lets you do
 \ pipelines or other complex calls without worrying about string escapes.
 
-: .pinfo dwProcessId ." Started process: " . cr ;
+: .pinfo dwProcessId d@ ." Started process: " . cr ;
 
 public{
 
@@ -527,7 +529,8 @@ kernel32 2 dllfun Process32Next Process32Next
 kernel32 2 dllfun Thread32First Thread32First 
 kernel32 2 dllfun Thread32Next Thread32Next
 kernel32 3 dllfun OpenProcess OpenProcess
-kernel32 3 dllfun OpenThread  OpenThread
+kernel32 2 dllfun TerminateProcess TerminateProcess
+kernel32 3 dllfun OpenThread OpenThread
 kernel32 1 dllfun SuspendThread SuspendThread
 kernel32 1 dllfun ResumeThread ResumeThread
 kernel32 2 dllfun GetThreadContext GetThreadContext
@@ -652,11 +655,18 @@ variable target
   dup 44 + target @ cstrstr if .ps else drop then 
 ;
 
+: terminate ( pid -- )
+  ." Open process " dup . 1 0 rot OpenProcess dup if ." OK\n" else .err return then
+  ." Terminate... " dup 0 TerminateProcess if ." OK\n" else .err then
+  ." Free resources\n" CloseHandle drop
+;
+
 public{
 
 : .threads .pre PID ! ['] .threads* *threads .post ;
 : ps       .pre ['] .ps *processes .post ;
 : psfind   .pre readline drop target ! ['] .match *processes .post ;
+: pskill   .pre terminate .post ;
 
 }public
 
