@@ -10,6 +10,7 @@ cabinet.dll 3 dllfun CreateCompressor CreateCompressor
 cabinet.dll 1 dllfun CloseCompressor CloseCompressor
 cabinet.dll 6 dllfun Compress Compress
 cabinet.dll 4 dllfun QueryCompressorInformation QueryCompressorInformation
+cabinet.dll 4 dllfun SetCompressorInformation SetCompressorInformation
 
 variable compressor
 variable outbytes
@@ -20,6 +21,10 @@ variable outbytes
     .err return
   then
 
+  \ set enormous block size (saved 10% size in testing!)
+  1024 1024 * here !
+  compressor @ 1 here 4 SetCompressorInformation drop
+  
   \ compress the data
   compressor @ -rot dup allocate >r r@ over outbytes ( c a1 u1 a2 u1 p )
   Compress drop
@@ -30,3 +35,4 @@ variable outbytes
   \ free resources
   compressor @ CloseCompressor 0= if .err then
 ;
+
