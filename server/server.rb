@@ -181,11 +181,13 @@ class Channel
   end
   
   def handle_image
+    format = 0
     width = 0
     height = 0
     length = 0
     raw = nil
 
+    format = sock.read(1).ord
     8.times { |i| width |= (sock.read(1).ord) << (i * 8) }
     8.times { |i| height |= (sock.read(1).ord) << (i * 8) }
     8.times { |i| length |= (sock.read(1).ord) << (i * 8) }
@@ -203,13 +205,35 @@ class Channel
       return
     end
 
+    pixels = ""
+
+    case format
+    when 0
+      puts("\x1b[s\x1b[33;1m8-bit grayscale image\x1b[u")
+      pixels = raw
+    when 1
+      puts("\x1b[s\x1b[33;1m8-bit color image\x1b[u")
+      raw.each_byte do |i|
+        pixels << ((i & 0b00000111) << 5).chr
+        pixels << ((i & 0b00111000) << 2).chr
+        pixels << ((i & 0b11000000) << 0).chr
+      end
+    end
+    
     if $rmagick
 
       # we can pop up a window showing the screenshot, talk about
       # awesome U/X!
       
       image = Magick::Image.new(width, height)
-      image.import_pixels(0,0,width,height,"I",raw)
+
+      case format
+      when 0
+        image.import_pixels(0,0,width,height,"I",pixels)
+      when 1
+        image.import_pixels(0,0,width,height,"RGB", pixels)
+      end
+
       image.flip!
     
       puts("Displaying it")
@@ -218,16 +242,20 @@ class Channel
       end
     end
 
-    # generate a "hard copy" as a PGM
-    outfile = Tempfile.new(['screenshot-', '.pgm'])
-    outfile.write("P5\n")
+    # generate a "hard copy" as a netPBM of some sort
+    extension = format == 0 ? ".pgm" : ".ppm"
+    magic = format == 0 ? "P5\n" : "P6\n"
+    bytes = format == 0 ? 1 : 3
+
+    outfile = Tempfile.new(['screenshot-', extension])
+    outfile.write(magic)
     outfile.write("# screenshot #{DateTime.now}\n")
     outfile.write("#{width} #{height}\n255\n")
 
     height.times do |row|
       # BMPs are upside down, so we rearrange it, sigh
-      offset = (height - row - 1) * width
-      outfile.write(raw[offset...offset+width])
+      offset = (height - row - 1) * width * bytes
+      outfile.write(pixels[offset...offset+(width * bytes)])
     end
 
     outfile.close

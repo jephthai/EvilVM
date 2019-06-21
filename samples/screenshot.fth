@@ -1,13 +1,8 @@
-\ require pdump.fth
 \ require structs.fth
 \ require compress.fth
 
-$317 value WM_PRINT
-$10 value PRF_CHILDREN
-$4 value PRF_CLIENT
-$8 value PRF_ERASEBKGND
-$2 value PRF_NONCLIENT
-$20 value PRF_OWNED
+0 value GRAYSCALE_8BIT
+1 value COLOR_8BIT
 
 $8 value HORZRES
 $a value VERTRES
@@ -15,16 +10,8 @@ $cc0020 value SRCCOPY
 $0 value DIB_RGB_COLORS
 $1 value BI_RGB
 
-loadlib user32.dll
-value user32.dll
-
 loadlib gdi32.dll
 value gdi32.dll
-
-user32.dll 0 dllfun GetDesktopWindow GetDesktopWindow
-user32.dll 2 dllfun GetWindowRect GetWindowRect
-user32.dll 1 dllfun GetDC GetDC
-user32.dll 2 dllfun ReleaseDC ReleaseDC
 
 gdi32.dll  4 dllfun CreateDC CreateDCA
 gdi32.dll  1 dllfun DeleteDC DeleteDC
@@ -59,6 +46,8 @@ variable initial
 variable bitmap
 variable oldbmp
 variable buffer
+
+0 value image-format
 
 create info BITMAPINFOHEADER 2 * allot
 
@@ -126,6 +115,30 @@ $f8 value fidelity
   width @ * + 4 * buffer @ + d@
 ;
 
+: split-channels
+  3 0 do dup $ff and swap 8 >> loop drop
+;
+
+: color-image
+  width @ height @ * dup total !
+  allocate dup region !
+  offset !
+
+  height @ 0 do
+    width @ 0 do
+      i j @px
+      split-channels 
+      5 >> 
+      swap 5 >> 3 << or
+      swap 6 >> 6 << or
+      offset @ c!
+      1 offset +!
+    loop
+  loop
+
+  COLOR_8BIT [to] image-format
+;
+
 : half-image
   width @ 1 >> height @ 1 >> * dup total !
   allocate dup region !
@@ -146,6 +159,8 @@ $f8 value fidelity
 
   width @ 1 >> width !
   height @ 1 >> height !
+
+  GRAYSCALE_8BIT [to] image-format
 ;
 
 : full-image
@@ -161,9 +176,11 @@ $f8 value fidelity
     1 offset +!
     4 +
   loop
+
+  GRAYSCALE_8BIT [to] image-format
 ;
 
-' full-image value scaler
+' color-image value scaler
 
 : view-desktop
   .pre -bold
@@ -182,7 +199,7 @@ $f8 value fidelity
   dup ." Compressed to " +bold . -bold ." bytes with \x1b[1mLZMS\x1b[22m\n"
 
   ." Sending data stream... "
-  2 emit 2 emit
+  2 emit 2 emit image-format emit
   width @ .quad
   height @ .quad
   dup .quad
