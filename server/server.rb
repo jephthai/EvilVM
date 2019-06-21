@@ -214,9 +214,10 @@ class Channel
     when 1
       puts("\x1b[s\x1b[33;1m8-bit color image\x1b[u")
       raw.each_byte do |i|
-        pixels << ((i & 0b00000111) << 5).chr
-        pixels << ((i & 0b00111000) << 2).chr
-        pixels << ((i & 0b11000000) << 0).chr
+        # color correct the ranges so we get the full 255 max value
+        pixels << ([((i & 0b00000111) << 5) * 8 / 7, 255].min).chr
+        pixels << ([((i & 0b00111000) << 2) * 8 / 7, 255].min).chr
+        pixels << ([((i & 0b11000000) << 0) * 4 / 3, 255].min).chr
       end
     end
     
