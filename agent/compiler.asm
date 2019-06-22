@@ -35,8 +35,19 @@ end_def parse
 ;;; ------------------------------------------------------------------------
 
 start_def ASM, s_to_num, "s>n"
+	push rbp
 	mov rbx, G_BASE		; get number base
 	
+	xor ebp, ebp		; use ebp as a flag for negation
+	mov rax, [PSP]		; get address of string
+	mov al, [rax]		; get first byte
+	cmp al, '-'		; compare it to a minus sign
+	jne .positive		; leave the flag zero if not equal
+	mov ebp, 1		; flag negative conversion for later
+	inc QWORD [PSP]		; skip first char
+	dec edi			; ...
+	
+.positive:
 	;; Test for $ sigil (for hexadecimal numbers)
 	mov rax, [PSP]
 	mov al, [rax]		; 
@@ -45,7 +56,7 @@ start_def ASM, s_to_num, "s>n"
 	mov rbx, 16		; set base to hex
 	inc QWORD [PSP]		; move the pointer
 	dec edi			; reduce the length
-	
+
 .base:	xor eax, eax		; start at 0
 .loop:	call code_walk		; a' u' c
 	sub TOS, 0x30		; digits start here
@@ -69,8 +80,16 @@ start_def ASM, s_to_num, "s>n"
 	call code_ddrop
 	call code_drop
 	call code_err
+	pop rbp
 	int3
 .done:
+
+	and ebp, ebp
+	jz .skipnegate
+	neg TOS
+
+.skipnegate:
+	pop rbp
 end_def s_to_num	
 
 start_def ASM, reset, "reset"
