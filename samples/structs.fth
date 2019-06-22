@@ -12,6 +12,7 @@ variable :SETTER:
 
 : select-function
   case
+    0 of '{ }' '{ }' endof
     1 of ['] c@ ['] c! endof
     2 of ['] w@ ['] w! endof
     4 of ['] d@ ['] d! endof
@@ -29,6 +30,7 @@ public{
 4 value DWORD
 8 value QWORD
 8 value PVOID
+0 value STRUCT
 
 : ARRAY ( count size )  * ;
 
