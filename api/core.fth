@@ -9,6 +9,7 @@ hex
 : !key       38 glob ! ; inline
 : meminput   40 glob @ ; inline
 : !meminput  40 glob ! ; inline
+: boot       48 glob @ ; inline
 : here       58 glob @ ; inline
 : !here      58 glob ! ; inline
 : last       60 glob @ ; inline
@@ -20,6 +21,8 @@ hex
 : stdin      70 glob @ ; inline
 : scratch    100 glob @ ; inline
 : entrypoint 120 glob @ ; inline
+: lasterr    150 glob @ ; inline
+: handler    158 glob ; inline
 : endofshell 188 glob @ ; inline
 : line       170 glob ; inline
 : lastword   178 glob @ 180 glob @ ; inline
@@ -816,7 +819,9 @@ public{
 
   +bold ." \nContext:\n"
   here safehere? 0= if
-    ." Fixing 'here'; dictionary may be inconsistent now!" fixhere 
+    ." Fixing 'here'; dictionary may be inconsistent now!" fixhere
+  else
+    drop
   then
 
   $150 glob @ 8 + @ ( *CONTEXT )
@@ -835,7 +840,6 @@ public{
   then
 
   drop +bold clear
-  underflow
 ;
 
 }public

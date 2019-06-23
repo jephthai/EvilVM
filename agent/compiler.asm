@@ -117,6 +117,7 @@ start_def ASM, reset, "reset"
 .skip:  mov PSP, G_PSP0		; reset parameter stack
 	mov rsp, G_RSP0		; reset call stack
 	call G_HANDLER		; error handler
+	call code_underflow	; do normal underflow handling
 	pushthing 250		; prevent busy loop on fail
 	call code_ms		; ...
 .wait:
