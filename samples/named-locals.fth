@@ -59,32 +59,60 @@ variable varcount
 \      local variables by name.  I guess it's not reasonable to
 \      expect it to be simple.
 
-: ,local
-  header word dup c, mem, >r
+: ,local ( n a u )
+  header >r dup c, mem,
 
   \ deposit code for addressing a local var
   ( index )            postpone lit   ['] litq    postpone ,call
   ( *loc  ) ['] *loc   postpone litq  ['] ,call   postpone ,call
-
+  
   r> 195 c, final
   here last - last 9 + d!
   4 last 8 + c!
 ;
 
+: /word ( addr u -- addr' u' addr u )
+  dup 0 do ( addr u )
+    over i + c@ white? if \ found it
+      over i + ( addr u a' )
+      over i - ( addr u a' u' )
+      rot drop ( addr a' u' )
+      rot i ( a' u' addr u )
+      unloop return
+    then
+  loop
+  2dup + -rot 0 -rot 
+;
+
+create namespace 128 allot
+variable localcount
+
+: .rsp 0 i,[ 4889e7 ] hex . cr dec ;
+
 \ make temporary dictionary space, define locals, and compile frame setup
-: locals ( n -- )
+: locals ( -- )
   \ move the dictionary to a temporary spot
-  here oldhere !  last oldlast !  this oldthis !  name-space !here 
+  here oldhere !
+  last oldlast !
+  this oldthis !
+  name-space !here 
 
   \ compile some local variable compilers
-  word parse dup 0 do i ,local loop                                 
-
+  localcount off
+  namespace @readline trim 
+  begin 
+    ltrim dup while
+    /word ( laddr' lu' waddr wu )
+    localcount @ -rot ,local  
+    1 localcount +!
+  repeat
+  2drop
+  
   \ go back to compiling the function
   oldhere @ !here                                                    
 
   \ functions only make a local frame if they're compiled to do so
-  litq [c] frame
-
+  localcount @ litq [c] frame
 ; immediate
 
 \ compile removal of the last frame

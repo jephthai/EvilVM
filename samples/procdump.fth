@@ -248,7 +248,7 @@ variable sepchar
 ;
 
 : contains ( regA regN subA subN -- addr[1] )
-  locals 4 regA regN subA subN
+  locals regA regN subA subN
   begin
     regN @ subN @ >= while
     regA @ subN @ subA @ subN @ strcmp 0=
@@ -268,7 +268,7 @@ variable notified
 
 : match-ascii ( addr u addr u -- )
   notified on
-  locals 4 regA regN subA subN
+  locals regA regN subA subN
   
     \ loop through this region until we've checked it all
     begin regN @ subN @ >= while
