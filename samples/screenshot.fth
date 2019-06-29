@@ -111,50 +111,46 @@ variable cbuf
 $f8 value fidelity
 
 : @px ( x y -- color )
-  swap width @ min swap height @ min
   width @ * + 2 << buffer @ + d@
 ;
 
-: split-channels
-  3 0 do dup $ff and swap 8 >> loop drop
-;
-
-: slow-rgb32->rgb8
-  split-channels 
-  5 >> 
-  swap 5 >> 3 << or
-  swap 6 >> 6 << or 
-;
+\ : split-channels
+\   3 0 do dup $ff and swap 8 >> loop drop
+\ ;
+\ 
+\ : slow-rgb32->rgb8
+\   split-channels 
+\   5 >> 
+\   swap 5 >> 3 << or
+\   swap 6 >> 6 << or 
+\ ;
 
 \ hand-coded ASM cuts execution time approximately in half
-\   mov rax, rdi
+\   mov eax, edi
 \   and al, 0b11000000
 \   shr ah, 5
 \   shl ah, 3
 \   or ah, al
-\   ror eax, 16
-\   shr al, 5
-\   rol eax, 8
+\   ror eax, 8
+\   shr ah, 5
 \   or al, ah
-\   xor rdi, rdi
+\   xor edi, edi
 \   mov dil, al
 
-: rgb32->rgb8 i,[ 4889f824c0c0ec05c0e40308c4c1c810c0e805c1c00808e04831ff4088c7 ] ; inline
+: rgb32->rgb8 i,[ 89f824c0c0ec05c0e40308c4c1c808c0ec0508e031ff4088c7 ] ; inline
 
 : color-image
   width @ height @ * dup total !
   allocate dup region !
-  offset !
 
-  height @ 0 do
-    width @ 0 do
-      i j @px rgb32->rgb8
-      offset @ c!
-      1 offset +!
-    loop
+  offset tuck !
+
+  total @ 0 do
+    i 2 << buffer @ + d@ rgb32->rgb8
+    over @ c! dup incr
   loop
 
-  COLOR_8BIT [to] image-format
+  drop COLOR_8BIT [to] image-format
 ;
 
 : half-image
