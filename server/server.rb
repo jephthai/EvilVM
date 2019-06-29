@@ -295,7 +295,19 @@ class Channel
 
     outfile.close
 
-    puts("\n\x1b[s\x1b[33;1mWrote screenshot to #{outfile.path}\x1b[u")
+    if find_executable("convert")
+      png = Pathname(name).sub_ext(".png").to_s
+      if system("convert #{name} #{png}")
+        File.unlink(name)
+        puts("\x1b[s\x1b[33;1mWrote screenshot to #{png}\x1b[u")
+        name = png
+      else
+        puts("\x1b[2\x1b[33;1mCould not convert to PNG, PPM is at #{outfile.path}\x1b[u")
+      end
+    else
+      puts("\x1b[s\x1b[33;1mWrote screenshot to #{outfile.path}\x1b[u")
+    end
+
 
     # open an image viewer if available
     if @image_viewer
