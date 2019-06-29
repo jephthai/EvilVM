@@ -112,12 +112,34 @@ $f8 value fidelity
 
 : @px ( x y -- color )
   swap width @ min swap height @ min
-  width @ * + 4 * buffer @ + d@
+  width @ * + 2 << buffer @ + d@
 ;
 
 : split-channels
   3 0 do dup $ff and swap 8 >> loop drop
 ;
+
+: slow-rgb32->rgb8
+  split-channels 
+  5 >> 
+  swap 5 >> 3 << or
+  swap 6 >> 6 << or 
+;
+
+\ hand-coded ASM cuts execution time approximately in half
+\   mov rax, rdi
+\   and al, 0b11000000
+\   shr ah, 5
+\   shl ah, 3
+\   or ah, al
+\   ror eax, 16
+\   shr al, 5
+\   rol eax, 8
+\   or al, ah
+\   xor rdi, rdi
+\   mov dil, al
+
+: rgb32->rgb8 i,[ 4889f824c0c0ec05c0e40308c4c1c810c0e805c1c00808e04831ff4088c7 ] ; inline
 
 : color-image
   width @ height @ * dup total !
@@ -126,11 +148,7 @@ $f8 value fidelity
 
   height @ 0 do
     width @ 0 do
-      i j @px
-      split-channels 
-      5 >> 
-      swap 5 >> 3 << or
-      swap 6 >> 6 << or
+      i j @px rgb32->rgb8
       offset @ c!
       1 offset +!
     loop
@@ -183,20 +201,20 @@ $f8 value fidelity
 ' color-image value scaler
 
 : view-desktop
-  .pre -bold
-
   ." Taking screenshot... "
 
   screenshot
 
   ." Done.\n"
 
-  scaler execute 
+  '{ scaler execute }' elapsed
+  ." Encoded image in " +bold . -bold ." ms\n"
 
   region @ total @ 
-  compress 2dup
+  '{ compress }' elapsed
+  ." Compressed in " +bold . -bold ." ms\n"
 
-  dup ." Compressed to " +bold . -bold ." bytes with \x1b[1mLZMS\x1b[22m\n"
+  2dup dup ." Compressed to " +bold 10 >> . -bold ." KB with \x1b[1mLZMS\x1b[22m\n"
 
   ." Sending data stream... "
   2 emit 2 emit image-format emit
@@ -210,6 +228,11 @@ $f8 value fidelity
   drop free 
   free-screenshot
   region @ free
+;
 
+: view-desktop
+  .pre -bold
+  '{ view-desktop }' elapsed
+  ." Full operation in " +bold . -bold ." ms\n"
   .post
 ;
