@@ -16,9 +16,6 @@ I realized that I can add exception handling easily, but creating a stack of exc
 ** UDP transport
 Implement block/retransmit reliability at first; maybe implement a rolling window...
 
-** Seamless file upload and download
-Current download is hackish. The `seeasm` control code for adding metadata to output could make this much better. 
-
 ** Windows server/build compatibility
 Github user @BEN00262 asked about running EvilVM entirely on Windows.  It turns out this might not be too hard to achieve, at least for the vast majority of the system (ICMP shim being the hardest, I think, since it will require some real effort for the server side).  Primary hurdles: account for `readline` differences, and make `build.rb` work well on a Windows box with necessary prereqs installed.
 * Code quality
@@ -30,7 +27,11 @@ The one byte at a time Queue in the server is the predominant source of slowness
 
 * TODONE list
 ** ICMP transport
-I've often found it useful in weird situations while pen-testing, and EvilVM can't be complete without an ICMP tunnel transport!
++I've often found it useful in weird situations while pen-testing, and EvilVM can't be complete without an ICMP tunnel transport!+
+ICMP transport exists!  It's an unreliable protocol, but the transport does attempt to retransmit appropriately.  I've had one mysterious failure, but otherwise been able to keep links up for days with it in testing.
 ** SMB named pipe transport
-Can probably use the ruby_smb project to write the shim.
-
++Can probably use the ruby_smb project to write the shim.+
+The ruby_smb library turned out to be awesome, and the named pipe transport seems to be working well in testing.
+** Seamless file upload and download
++Current download is hackish. The `seeasm` control code for adding metadata to output could make this much better.+
+Added ^Kupload command and changed download command so they use alternate streaming support in the server.  They should generally work like one would expect now.
