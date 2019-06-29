@@ -449,10 +449,10 @@ kernel32 2 dllfun GetComputerName GetComputerNameA
 \ Load a file into memory
 \ ------------------------------------------------------------------------
 
-private
-kernel32 2 dllfun GetFileSize GetFileSize
 kernel32 7 dllfun CreateFile CreateFileA
+kernel32 2 dllfun GetFileSize GetFileSize
 kernel32 5 dllfun ReadFile ReadFile
+kernel32 5 dllfun WriteFile WriteFile
 
 : loadfile
   drop $80000000 7 0 3 0 0 CreateFile
@@ -466,7 +466,6 @@ kernel32 5 dllfun ReadFile ReadFile
     cr .err cr 0
   then 
 ;
-public
 
 private
 
@@ -519,11 +518,33 @@ public{
 : cat      ['] type fileop ;
 : download ['] streamfile fileop ;
 
-\ preliminary test of getting binary data up to the compiler
+: keyquad 8 0 do key loop 0 8 0 do 8 << swap or loop ;
+
 : upload
-  ." Paste A85-encoded text: " readline
-  /ascii85 2dup .pre type .post
-  drop free ;
+  .pre
+  readline ." Writing to \x1b[36m" 2dup type ." \x1b[35m\n"
+  drop $40000000 7 0 2 0 0 CreateFile dup 0 > if
+    ." Opened and truncated, requesting data stream\n"
+    2 emit 4 emit
+    keyquad dup if
+      dup ." Receiving \x1b[36m" . ." \x1b[35mbytes\n"
+      0 do
+	key here c!
+	dup here 1 len 0 WriteFile drop
+      loop
+    then
+    CloseHandle drop
+  else
+    .err 
+  then
+  .post
+;
+
+\ preliminary test of getting binary data up to the compiler
+\ : upload
+\   ." Paste A85-encoded text: " readline
+\   /ascii85 2dup .pre type .post
+\   drop free ;
 
 }public
 

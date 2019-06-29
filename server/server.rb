@@ -106,7 +106,7 @@ class CircleBuffer
 end
 
 class Channel
-  attr_accessor :sock, :emitter, :output, :ident, :lines, :lineno, :mon, :files
+  attr_accessor :sock, :emitter, :output, :ident, :lines, :lineno, :mon, :files, :outdata
 
   def initialize(sock)
     @buffer = ""
@@ -117,6 +117,7 @@ class Channel
     @files  = {}
     @mode   = 0
     @image_viewer = nil
+    @outdata = nil
 
     if find_executable "eog"
       @image_viewer = "eog"
@@ -164,6 +165,10 @@ class Channel
             # download raw data with filename
             handle_download
             next
+          when 4
+            # agent is ready to receive a block of data
+            send_data
+            next
           end
         elsif byte != 13
           line << byte
@@ -178,6 +183,17 @@ class Channel
     load_file("#{$root}/samples/payload-net.fth")
     @sock.write("\r\nident\r\n")
     @clear_on_load = true
+  end
+
+  def send_data
+    if @outdata
+      sock.write([@outdata.length].pack("Q"))
+      sock.write(@outdata)
+      @outdata = nil
+    else
+      sock.write([0].pack("Q"))
+      puts("\x1b[s\x1b[31m\nERROR: agent asked for upload, but no data sent; try ^Kupload?\x1b[u")
+    end
   end
 
   def handle_download
@@ -555,6 +571,16 @@ while true
           when "stream"
             if File.exist?(fields[0])
               current.stream_file(fields[0])
+            else
+              puts("\x1b[31;1mError, file does not exist\x1b[0m")
+            end
+          when "upload"
+            if File.exist?(fields[0])
+              f = File.open(fields[0], "rb")
+              current.outdata = f.read()
+              f.close
+              command = "upload #{File.basename(fields[0])}\n"
+              current.sock.write(command)
             else
               puts("\x1b[31;1mError, file does not exist\x1b[0m")
             end
