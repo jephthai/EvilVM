@@ -366,6 +366,9 @@ variable precision 100 precision !
   endcase ;
 
 private
+
+create linebuf 256 allot
+
 : readline key dup nl? if drop 0 tack nip 1- else tack tail then ;
 : walk     over c@ >r >r 1+ r> 1- r> ;
 : 0term    2dup + 0 swap c! ;
@@ -374,7 +377,7 @@ private
 public{
 
 : @readline dup >r 0 readline r> swap ;
-: readline pad dup >r 0 readline r> swap ;
+: readline linebuf dup >r 0 readline r> swap ;
 : ltrim    walk white? if tail else >r 1- r> 1+ then ;
 : rtrim    over + 1- rtrim 1+ 0term ;
 : trim     ltrim rtrim ;
