@@ -653,6 +653,7 @@ public
 kernel32 1 dllfun GetLocalTime GetLocalTime
 kernel32 2 dllfun SystemTimeToFileTime SystemTimeToFileTime
 kernel32 2 dllfun FileTimeToSystemTime FileTimeToSystemTime
+kernel32 0 dllfun ticks GetTickCount
 
 create SYSTEMTIME 32 allot
 variable FILETIME
@@ -688,6 +689,9 @@ public{
   4 0#s         \ year
   #>
 ;
+
+\ measure execution time of some code
+: elapsed ( fn -- ms ) ticks >r execute ticks r> - ;
 
 \ convert time units to milliseconds
 : seconds 1000 * ;
