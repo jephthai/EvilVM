@@ -8,10 +8,14 @@
 #
 
 require 'optparse'
+require 'mkmf'
 
 here = File.dirname(__FILE__)
 $root = File.expand_path(here + "/../")
 $LOAD_PATH << $root + "/server/"
+$dot = "#{ENV['HOME']}/.evilvm"
+
+Dir.mkdir($dot) unless File.exists?($dot)
 
 puts("Root dir is #{$root}")
 
@@ -112,6 +116,13 @@ class Channel
     @lines  = CircleBuffer.new(16)
     @files  = {}
     @mode   = 0
+    @image_viewer = nil
+
+    if find_executable "eog"
+      @image_viewer = "eog"
+    elsif find_executable "display"
+      @image_viewer = "display"
+    end
 
     @clear_on_load = false
 
@@ -150,7 +161,7 @@ class Channel
             handle_image
             next
           when 3
-            # download raw data
+            # download raw data with filename
             handle_download
             next
           end
@@ -171,13 +182,35 @@ class Channel
 
   def handle_download
     len = 0
+    filename = ""
+    
+    while true
+      byte = sock.read(1)
+      break if byte == "\n"
+      filename << byte
+    end
+
+    filename.gsub!(/\/\\/, ".")
+    filename.gsub!(/\.+/, ".")
+
     8.times { |i| len |= (sock.read(1).ord) << (i * 8) }
 
+    # make sure we can put it somewhere
+    downdir = "#{$dot}/downloads"
+    Dir.mkdir(downdir) unless Dir.exists?(downdir)
+
+    # generate a 'safe' filename
+    handle = @colorname ? @colorname : "unassigned"
+    name = "#{Time.now()}-#{handle}-#{filename}"
+    name = downdir + "/" + name.gsub(/ /, "-").gsub(/--/, "-")
     data = sock.read(len)
-    file = Tempfile.new('download')
+    
+    # write the data out to disk
+    file = File.open(name, "wb")
     file.write(data)
     file.close()
-    puts("\x1b[33mDownloaded \x1b[1m#{len} byte\x1b[22m file to \x1b[1m#{file.path}\x1b[0m")
+
+    puts("\x1b[s\n\x1b[33mDownloaded \x1b[1m#{len} byte\x1b[22m file to \x1b[1m#{file.path}\x1b[u")
   end
   
   def handle_image
@@ -221,34 +254,19 @@ class Channel
       end
     end
     
-    if $rmagick
-
-      # we can pop up a window showing the screenshot, talk about
-      # awesome U/X!
-      
-      image = Magick::Image.new(width, height)
-
-      case format
-      when 0
-        image.import_pixels(0,0,width,height,"I",pixels)
-      when 1
-        image.import_pixels(0,0,width,height,"RGB", pixels)
-      end
-
-      image.flip!
+    # make sure we can put it somewhere
+    screendir = "#{$dot}/screenshots"
+    Dir.mkdir(screendir) unless Dir.exists?(screendir)
     
-      puts("Displaying it")
-      Thread.new do 
-        image.level(0,224 * 256).display()
-      end
-    end
-
     # generate a "hard copy" as a netPBM of some sort
     extension = format == 0 ? ".pgm" : ".ppm"
     magic = format == 0 ? "P5\n" : "P6\n"
     bytes = format == 0 ? 1 : 3
 
-    outfile = Tempfile.new(['screenshot-', extension])
+    handle = @colorname ? @colorname : "unassigned"
+    name = "#{Time.now()}-#{handle}#{extension}"
+    name = screendir + "/" + name.gsub(/ /, "-").gsub(/--/, "-")
+    outfile = File.open(name, "wb")
     outfile.write(magic)
     outfile.write("# screenshot #{DateTime.now}\n")
     outfile.write("#{width} #{height}\n255\n")
@@ -260,7 +278,13 @@ class Channel
     end
 
     outfile.close
+
     puts("\n\x1b[s\x1b[33;1mWrote screenshot to #{outfile.path}\x1b[u")
+
+    # open an image viewer if available
+    if @image_viewer
+      exec("#{@image_viewer} #{name}") if fork.nil?
+    end
   end
 
   def disassemble_code
@@ -304,6 +328,7 @@ class Channel
     if @ident
       unless @mon
         (name, rgb) = assign_color(@ident)
+        @colorname = name
         (r, g, b) = [rgb].pack("H*").unpack("CCC")
         name.gsub!(" ", "-")
         color  = sprintf("%03d;%03d;%03d", r, g, b)

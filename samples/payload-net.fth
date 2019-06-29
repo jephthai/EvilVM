@@ -474,6 +474,7 @@ private
 variable a85acc
 variable region
 variable len
+variable name
 
 : shift    256 a85acc *! ;       \ we add a byte at a time
 : output   a85acc @ 256 / ;       \ take off last byte
@@ -484,7 +485,7 @@ variable len
 \ extract a 4-byte chunk as 32-bit int
 : chunk    a85acc off 4 0 do next a85acc +! shift loop output ;
 
-: fileop   >r readline loadfile if 2dup .pre r> execute .post drop free then ;
+: fileop   >r readline over name ! loadfile if 2dup .pre r> execute .post drop free then ;
 
 \ now for decoding, same steps in reverse
 : /next    dup if walk dup 33 < if drop tail then dup 117 > if drop tail then else 33 then ;
@@ -498,6 +499,15 @@ variable len
 
 : decode   dup if /chunk tail then 2drop ;
 
+: streamfile
+  ." Downloading file '\x1b[36m" name @ dup .cstring ." \x1b[35m' of \x1b[36m"
+  over . ." \x1b[35mbytes\n"
+  2 emit 3 emit
+  .cstring cr
+  dup here ! here 8 type
+  type
+;
+
 public{
 
 \ encode all chunks in string
@@ -507,7 +517,7 @@ public{
   dup allocate region ! len off decode region @ len @ ;
 
 : cat      ['] type fileop ;
-: download ['] ascii85 fileop ;
+: download ['] streamfile fileop ;
 
 \ preliminary test of getting binary data up to the compiler
 : upload
