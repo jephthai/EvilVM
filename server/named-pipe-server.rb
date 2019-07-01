@@ -25,9 +25,9 @@ def domsg(msg, &block)
   end
 end
 
-if ARGV.length != 5
+if ARGV.length < 5
   puts()
-  puts(" Usage: named-pipe-server.rb <host> <pipe> <domain> <user> <password>")
+  puts(" Usage: named-pipe-server.rb <host> <pipe> <domain> <user> <password> [ <delay> ]")
   puts()
   puts(" This shim connects to an SMB named pipe at the indicated location")
   puts(" and proxies communications with the EvilVM server at localhost:1919")
@@ -36,6 +36,8 @@ if ARGV.length != 5
 end
 
 ($host, $pipename, $domain, $user, $pass) = ARGV
+
+$delay = ARGV.length == 6 ? ARGV[5].to_f : 1.0
 
 $mutex = Mutex.new
 
@@ -80,12 +82,13 @@ Thread.new do
       end
     end
 
-    sleep(0.1) if sent == 0
+    sleep($delay) if sent == 0
   end
 end
 
 while true
   line = $server.recv(512)
+  break if line.length == 0
   pputs("#{Time.now.to_s} session sending #{line.length} bytes")
   $mutex.synchronize do
     begin
@@ -98,4 +101,4 @@ while true
   end
 end
 
-
+pputs("Upstream socket failed, exiting...")
