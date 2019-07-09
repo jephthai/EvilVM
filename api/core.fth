@@ -474,7 +474,7 @@ private
 : .s  depth 1 = if dup . else .sN then ;
 : .s  depth 0 > if .s then ;
 : .s  depth <# [char] ) hold #s #> space .s cr ;
-: .s  ." \x1b[32;7m PSP(" .s ." \x1b[0m" ;
+: .s  ." \x1b[32;7m PSP(" .s ." \x1b[0m\x03" ;
 public
 
 : clear-stack begin depth while drop repeat ;
