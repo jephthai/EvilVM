@@ -119,6 +119,8 @@ dec
 : 2!   i,[ 498b042448894708498b442408488907498b7c24104983c418 ] ; inline
 : 2*   i,[ 48d1e7 ] ; inline
 : 2/   i,[ 48d1ef ] ; inline
+: c@   i,[ 408a3f4881e7ff000000 ] ; inline
+: d@   i,[ 8b3f4883e7ff ] ; inline
 
 \ ------------------------------------------------------------------------
 \ some more memory operators
@@ -597,6 +599,8 @@ public{
 \ The FFI, wrapping calls to C functions (samples/ffi.fth for example)
 \ ------------------------------------------------------------------------
 
+' getproc value getproc-fn
+
 private
 \ make shadow space and call the address in TOS
 
@@ -625,7 +629,7 @@ dec
 create callreg ' drop , ' call1 , ' call2 , ' call3 , ' call4 , ' callN ,
 does> swap 5 min cells + @ execute ;
 
-: dllfun create >r readline trim drop getproc here >r , r> r>
+: dllfun create >r readline trim drop getproc-fn execute here >r , r> r>
        ,[ 515241504151 ] \ save registers
        ,[ 4889e5 ]  \ mov rbp, rsp
        ,[ 4883e4f0 ]  \ and esp, -0x10 ; paragraph-align the stack
