@@ -814,8 +814,21 @@ public{
   cr
   clear ;  
 
+: .,  
+  <#
+  32 hold 
+  dup if
+    begin dup while
+      # dup if # dup if # dup if 44 hold then then then
+    repeat
+  else
+    #
+  then
+  #>
+;
+
 : usage
-  here dict @ - .pre ." Currently allocated " . ." bytes in dictionary\n" .post ;
+  here dict @ - .pre ." Currently allocated " ., ." bytes in dictionary\n" .post ;
 
 : ping
   @time cr .time cyan @hostname if .cstring space else drop then ." PONG\n" clear ;
