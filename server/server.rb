@@ -38,6 +38,7 @@ require 'pry'
 require 'minim.rb'
 require 'base64'
 require 'tempfile'
+require 'evil_help'
 
 def putshl(msg, chars)
   print("\x1b[35m")
@@ -524,10 +525,11 @@ emitter = Thread.new do
 
 while true
   if channels.length == 0
-    puts("Awaiting inbound connection...")
+    puts("No sessions, awaiting inbound connection...")
     while channels.length == 0
       sleep(0.2)
     end
+    puts("Entering session context; issue \x1b[1m^V^Khelp\x1b[22m for help")
     current = channels[0]
     $prompt = new_prompt(current, channels)
   end
@@ -606,6 +608,8 @@ while true
             end
             sleep 1
             exit 0
+          when "help"
+            print_help()
           else
             puts("\x1b[31;1m\nUnknown command: \x1b[33;1m#{cmd}\x1b[0m")
           end
