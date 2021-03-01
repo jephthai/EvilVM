@@ -161,11 +161,11 @@ loop }!
 ;
 
 : vkey ( vk -- )
-  0 2dup key-down 20 ms key-up
+  0 2dup key-down 30 ms key-up
 ;
 
 : keystroke ( vk sc -- ) 
-  map-key 2dup key-down 12 ms key-up
+  map-key 2dup key-down 30 ms key-up
 ;
 
 : combo-key ( fn -- )
