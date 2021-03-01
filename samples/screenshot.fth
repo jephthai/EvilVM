@@ -1,5 +1,6 @@
 \ require structs.fth
 \ require compress.fth
+\ require exceptions.fth
 
 0 value GRAYSCALE_8BIT
 1 value COLOR_8BIT
@@ -78,6 +79,53 @@ create info BITMAPINFOHEADER 2 * allot
   buffer @ free
   buffer off
 ;
+
+: with-screenshot ( fn -- )
+  try
+    \ Create a device context for the display
+    '{ s" DISPLAY" drop 0 0 0 CreateDC screen ! }' 
+    '{ screen @ DeleteDC drop }' attempt
+
+    \ Make a device compatible context
+    '{ screen @ CreateCompatibleDC memory ! }'
+    '{ memory @ DeleteDC drop }' attempt
+    
+    \ Get the screen resolution
+    screen @ HORZRES GetDeviceCaps width !
+    screen @ VERTRES GetDeviceCaps height !
+    
+    \ Create a bitmap in memory to save the screenshot
+    '{ screen @ width @ height @ CreateCompatibleBitmap initial ! }'
+    '{ initial @ DeleteObject drop }' attempt
+    
+    \ Select the right object to extract pixels
+    '{ memory @ initial @ SelectObject oldbmp ! }'
+    '{ oldbmp @ DeleteObject drop }' attempt
+    
+    \ Copy pixels from screen to in-memory bitmap
+    memory @ 0 0 width @ height @ screen @ 0 0 SRCCOPY BitBlt drop
+    memory @ oldbmp @ SelectObject bitmap !
+    
+    \ Populate fields of the bitmap structure
+    0 info BITMAPINFOHEADER fill
+    BITMAPINFOHEADER 4 + info biSize set
+    memory @ bitmap @ 0 0 0 info DIB_RGB_COLORS GetDIBits drop
+    
+    \ Allocate space for our pixel data
+    '{ info biHeight get info biWidth get * 4 * allocate buffer ! }'
+    '{ buffer @ free }' attempt
+    
+    \ Copy the pixels out of the bitmap object into our buffer
+    memory @ bitmap @ 0 info biHeight get buffer @ info DIB_RGB_COLORS GetDIBits drop
+
+    \ Execute the code that needs the screenshot data
+    execute
+
+  ensure    
+    \ Run all the cleanup functions, no matter how far we made it
+    cleanup
+  done
+;    
 
 : .quad
   here ! here 8 type
@@ -195,6 +243,20 @@ $f8 value fidelity
 ;
 
 ' color-image value scaler
+
+: safe-view
+  '{ scaler execute
+     region @ total @ compress
+     2dup 
+     2 emit 2 emit image-format emit
+     width @ .quad
+     height @ .quad
+     dup .quad
+     type
+     drop free
+     region @ free
+  }' with-screenshot
+;
 
 : view-desktop
   ." Taking screenshot... "
