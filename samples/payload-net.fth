@@ -846,7 +846,8 @@ dec
   here dict @ - .pre ." Currently allocated " ., ." bytes in dictionary\n" .post ;
 
 : ping
-  @time cr .time cyan @hostname if .cstring space else drop then ." PONG\n" clear ;
+  @time cr .time cyan @hostname if .cstring space else drop then
+  ." PONG\n" clear ETX emit ;
 
 \ support code tossed in by a parent thread
 : init ;
