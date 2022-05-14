@@ -33,7 +33,7 @@ end_def engine
 start_def ASM, initio, "initio"	
 	mov rbp, rsp
 	and rsp, -16 		; align stack
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	
 	call .b
 .a:     db "ws2_32.dll", 0
@@ -151,7 +151,7 @@ start_def ASM, emit, "emit"
 	xor r8, r8
 	inc r8
 	xor r9, r9
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	call G_WSEND
 	add rsp, 0x28
 	mov rdi, [PSP]
@@ -168,9 +168,9 @@ start_def ASM, key, "key"
 	xor r8, r8
 	inc r8
 	xor r9, r9
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	call G_WRECV
-	add rsp, 0x20
+	add rsp, SHADOW
 	pop rdi
 	and rdi, 0xff
 
@@ -243,9 +243,9 @@ start_def ASM, type, "type"
 	mov rdx, [PSP]
 	mov r8, rdi
 	xor r9, r9
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	call G_WSEND
-	add rsp, 0x20
+	add rsp, SHADOW
 	mov rdi, [PSP+8]
 	add PSP, 16
 	pop rcx

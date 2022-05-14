@@ -307,7 +307,7 @@ end_def setecho
 net_delay:
 	push rbp		; 
 	mov rbp, rsp		; save stack
-	sub rsp, 0x20		; make shadow space
+	sub rsp, SHADOW		; make shadow space
 	and rsp, -16		; align stack just in case
 
 	mov rcx, G_RESPONSE	; get last response code

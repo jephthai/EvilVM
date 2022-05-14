@@ -21,7 +21,7 @@ end_def engine
 	
 start_def ASM, initio, "initio"
 	mov rbp, rsp
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	and rsp, -16
 	
 	xor ebx, ebx
@@ -52,7 +52,7 @@ end_def initio
 
 start_def ASM, emit, "emit"
 	mov rbp, rsp
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	and rsp, -16
 	
 	mov rbx, G_IOBUF	; get pointer to IO buffer
@@ -86,7 +86,7 @@ end_def emit
 	
 start_def ASM, key, "key"
 	mov rbp, rsp
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	and rsp, -16
 
 	mov rbx, G_IOBUF
