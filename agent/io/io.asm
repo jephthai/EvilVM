@@ -46,7 +46,7 @@ start_def ASM, emit, "emit"
 	mov r8, 1		; print only one character
 	mov r9, r15		; place to save # bytes written
 	push QWORD 0		; final parameter, no flags
-	sub rsp, 0x20		; shadow space
+	sub rsp, SHADOW		; shadow space
 	call W32_WriteFile	; ...
 	add rsp, 0x30		; fix stack
 	pop rcx
@@ -59,7 +59,7 @@ start_def ASM, key, "key"
 	mov rcx, G_INPUT
 	mov r8, 1
 	mov r9, r15
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	call W32_ReadFile
 	pushthing [rsp+0x28]
 	and rdi, 0xff
@@ -89,7 +89,7 @@ start_def ASM, type, "type"
 	mov r9, r15		; WriteFile reports # bytes written
 	push 0			; keep stack paragraph aligned
 	push 0			; no flags
-	sub rsp, 0x20		; shadow space
+	sub rsp, SHADOW		; shadow space
 	call W32_WriteFile	; ...
 	add rsp, 0x30		; fix stack
 	pop rcx

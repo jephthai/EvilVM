@@ -6,7 +6,7 @@ WORKDIR /
 
 RUN apt-get update
 RUN apt-get install --no-install-recommends -y mingw-w64 
-RUN apt-get install --no-install-recommends -y ruby ruby-sinatra ruby-sinatra-contrib thin pry
+RUN apt-get install --no-install-recommends -y ruby ruby-dev ruby-sinatra ruby-sinatra-contrib thin pry
 RUN apt-get install --no-install-recommends -y git bsdmainutils procps screen tmux
 RUN apt-get install --no-install-recommends -y autoconf build-essential nasm curl xz-utils
 

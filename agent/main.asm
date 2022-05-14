@@ -53,7 +53,7 @@ save:   sub rax, save - main	; find entry point for shellcode
 	mov G_RSP0, rsp
 	mov G_PSP0, r12
 	
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	mov ecx, -11
 	call W32_GetStdHandle
 	mov G_STDOUT, rax
@@ -88,7 +88,7 @@ save:   sub rax, save - main	; find entry point for shellcode
 	mov r8d, 0x3000		; allocation type
 	mov r9d, 0x40		; protection flags
 	call W32_VirtualAlloc	; ...
-	add rsp, 0x20		; remove shadow space
+	add rsp, SHADOW		; remove shadow space
 	
 	mov G_SCRATCH, rax
 	add rax, 0x100
@@ -195,7 +195,7 @@ update:	mov rcx, [rbx]		; get LINK offset
 ;;; Environment is set up, dictionary exists, "main" code follows
 ;;; ------------------------------------------------------------------------
 
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	mov ecx, 0xffff		 ; avoid error reporting
 	call W32_SetErrorMode    ; ...
 
@@ -221,7 +221,7 @@ update:	mov rcx, [rbx]		; get LINK offset
 	xor ecx, ecx
 	;inc ecx
 	call W32_AddVectoredExceptionHandler
-	add rsp, 0x20
+	add rsp, SHADOW
 
 	pushthing code_key - main
 	add rdi, G_ENTRY
@@ -237,7 +237,7 @@ boot:	call code_initio
 	;; phones home don't look the same
 	push rbp
 	mov rbp, rsp
-	sub rsp, 0x20
+	sub rsp, SHADOW
 	and rsp, -16
 	call W32_GetTickCount	; ticks since boot
 	pushthing rax		;
